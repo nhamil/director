@@ -68,8 +68,10 @@ module.exports = function(grunt) {
         }
     });
 
+    grunt.registerTask('build', ['clean', 'copy:screeps']); 
+    grunt.registerTask('build-min', ['clean', 'webpack:dist']); 
     grunt.registerTask('stable',  ['clean', 'webpack:dist', 'copy:stable']);
-    grunt.registerTask('private',  ['clean', 'webpack:dist', 'screeps']);
-    grunt.registerTask('sim',  ['clean', 'webpack:dist', 'copy:sim']);
+    grunt.registerTask('private',  ['screeps']);
+    grunt.registerTask('sim',  ['copy:sim']);
 
 }
