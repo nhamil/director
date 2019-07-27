@@ -12,6 +12,17 @@ module.exports = function(grunt) {
 
     grunt.initConfig({
         screeps: {
+            options: {
+                server: {
+                    host: config.private.host, 
+                    port: config.private.port, 
+                    http: config.private.http 
+                }, 
+                email: config.private.email, 
+                password: config.private.password, 
+                branch: config.private.branch || 'default', 
+                ptr: false 
+            }, 
             dist: {
                 src: ['dist/*.js'] 
             }
@@ -58,7 +69,7 @@ module.exports = function(grunt) {
     });
 
     grunt.registerTask('stable',  ['clean', 'webpack:dist', 'copy:stable']);
-    grunt.registerTask('default',  ['clean', 'webpack:dist', 'screeps']);
+    grunt.registerTask('private',  ['clean', 'webpack:dist', 'screeps']);
     grunt.registerTask('sim',  ['clean', 'webpack:dist', 'copy:sim']);
 
 }
