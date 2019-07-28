@@ -1,14 +1,19 @@
+'use strict' 
+
+require('./Director'); 
+require('./prototype'); 
 require('./util'); 
-require('./travel'); 
 
-require('./directive'); 
-require('./director'); 
+util.log('Initializing the Director'); 
 
-require('./prototype.creep'); 
+util.invokeSafe(function() {
+    util.init(); 
+    Director.init(); 
+}); 
 
-Director.init(); 
-
-module.exports.loop = function() 
-{
-    Director.run(); 
-}
+module.exports.loop = function() {
+    util.invokeSafe(function() {
+        Director.run(); 
+        util.update(); 
+    }); 
+} 

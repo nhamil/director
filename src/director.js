@@ -1,281 +1,75 @@
+'use strict' 
+
 global.Director = module.exports; 
 
-let spawnRequests = []; 
+class Director {
 
-let waitTicks = 30; 
-let lastLog = Game.time; 
-let text = []; 
+    static init() {
 
-Director.tasks = 
-{
-    build: require('./task.build'), 
-    claim: require('./task.claim'), 
-    guard: require('./task.guard'), 
-    mine: require('./task.mine'), 
-    repair: require('./task.repair'), 
-    supply: require('./task.supply'), 
-    upgrade: require('./task.upgrade'), 
-    withdraw: require('./task.withdraw') 
+    }
+
+    static run() {
+
+    }
+
+    static getIdleCreepsByHome(home, template) {
+
+    }
+
+    static getCreepsByHome(home, template) {
+
+    }
+
+    static getWorkingCreepsByHome(home, task) {
+
+    }
+
+    static requestSpawn(request) {
+
+    }
+
+    static getSpawnRequestForRoom(room) {
+
+    }
+
+    static isSpawnRequestedForRoom(room) {
+        
+    }
+
+}
+
+const directivesByRcl = {
+    1: ['general', 'spawn'],
+    2: ['defense', 'mine', 'repair', 'supply', 'build', 'upgrade', 'spawn'],
+    5: ['defense', 'mine', 'repair', 'supply', 'expand', 'build', 'upgrade', 'spawn']
 };
 
-Director.directives = 
-{
-    build: require('./directive.build'), 
-    defense: require('./directive.defense'), 
-    expand: require('./directive.expand'), 
-    general: require('./directive.general'), 
-    mine: require('./directive.mine'), 
-    repair: require('./directive.repair'),  
-    spawn: require('./directive.spawn'), 
-    supply: require('./directive.supply'), 
-    upgrade: require('./directive.upgrade') 
-}; 
+let creepData; 
+let spawnRequests; 
+let sortSpawnRequests = false; 
 
-Director.roles = 
-{
-    brute: require('./role.brute'), 
-    builder: require('./role.builder'), 
-    claimer: require('./role.claimer'), 
-    general: require('./role.general'), 
-    miner: require('./role.miner'), 
-    repairer: require('./role.repairer'), 
-    supplier: require('./role.supplier'), 
-    upgrader: require('./role.upgrader')  
-};
+Director.directives = require('./directive'); 
+Director.templates = require('./template'); 
+Director.tasks = require('./task'); 
 
-Director.visual = new RoomVisual(); 
-
-Director.setDisplayTravel = function(show) 
-{
-    Memory.displayTravel = show || false; 
-
-    if (show) 
-    {
-        return "Displaying travel data"; 
-    }
-    else 
-    {
-        return "Hiding travel data"; 
-    }
+Director.init = function() {
+    util.requireField(Memory, 'rooms'); 
+    util.requireField(Memory, 'creeps'); 
+    util.requireField(Memory, 'flags'); 
+    util.requireField(Memory, 'spawns'); 
+    util.requireField(Memory, 'expandFlags'); 
+    util.requireField(Memory, 'needsSpawn'); 
 }
 
-Director.log = function(msg, toConsole) 
-{
-    let t = msg || ""; 
-    if (typeof(t) !== 'string') t = JSON.stringify(t); 
-    text.push(t);
-    if (toConsole) console.log(t);  
-}
+Director.run = function() {
+    processData(); 
 
-Director.getSpawnRequestForRoom = function(room) 
-{
-    for (let i in spawnRequests) 
-    {
-        let req = spawnRequests[i]; 
+    handleRooms('preFrame'); 
+    handleRooms('run'); 
+    handleRooms('postFrame'); 
 
-        if (req.room === room.name) 
-        {
-            spawnRequests.splice(parseInt(i), 1); 
-            return req; 
-        }
-    }
+    handleCreeps(); 
 
-    return null; 
-} 
-
-Director.isSpawnRequestedForRoom = function(room) 
-{
-    for (let i in spawnRequests) 
-    {
-        let req = spawnRequests[i]; 
-
-        if (req.room == room.name) return true; 
-    }
-
-    return false; 
-}
-
-Director.requestSpawn = function(room, role, needNow, priority) 
-{
-    spawnRequests.push({
-        room: room.name, 
-        role: role, 
-        now: needNow, 
-        priority: priority === undefined ? 1000 : priority 
-    }); 
-
-    // lower number come first 
-    spawnRequests.sort((a, b) => a.priority - b.priority);
-}
-
-Director.init = function() 
-{
-    console.log('Initializing the Director...'); 
-}
-
-let printStats = function() 
-{
-    let toConsole = Game.time - lastLog >= waitTicks;  
-    {
-        lastLog = Game.time; 
-
-        let pop = {}; 
-        for (let i in Game.creeps) 
-        {
-            let c = Game.creeps[i]; 
-            let role = c.memory.role || 'unknown'; 
-            pop[role] = (pop[role] || 0) + 1; 
-        }
-
-        let names = _.keys(pop); 
-        names.sort(); 
-
-        let msg = undefined; 
-        for (let index in names) 
-        {
-            let i = names[index]; 
-            let r = Director.roles[i] || {}; 
-            let name = r.initial || i; 
-            if (msg) 
-            {
-                msg += ' ' + name + ':' + pop[i];
-            }
-            else 
-            {
-                msg = name + ':' + pop[i]; 
-            }
-        }
-        msg = 'Population (' + _.sum(pop) + '): ' + msg; 
-        // console.log(msg); 
-        Director.log(msg, toConsole); 
-    }
-}
-
-let printMessages = function() 
-{
-    for (let i in text) 
-    {
-        let t = text[i]; 
-        Director.visual.text(t, 1, 1 + parseInt(i), { 
-            align: 'left', 
-            font: '0.8 monospace' 
-        }); 
-    }
-}
-
-Director.run = function() 
-{
-    spawnRequests = []; 
-    text = []; 
-
-    Travel.preFrame(); 
-
-    Director.log('Current time: ' + Util.getDate()); 
-    if (Director.displayTravel) Director.log('Displaying Travel Data'); 
-
-    printStats(); 
-
-    for (let roomName in Game.rooms) 
-    {
-        try 
-        {
-            let room = Game.rooms[roomName]; 
-            if (isMyRoom(room)) handleMyRoom(room); 
-        }
-        catch (e) { Director.log(e); console.log(e.stack); Game.notify(e.stack); } 
-    }
-
-    for (let creepName in Game.creeps) 
-    {
-        try 
-        {
-            let c = Game.creeps[creepName]; 
-            if (!c.memory || !c.memory.role) 
-            {
-                console.log(c.name + ' does not have a role: suiciding'); 
-                c.suicide(); 
-            }
-            else if (c.body.length <= 1) 
-            {
-                console.log(c.name + ' is too weak: suiciding'); 
-                c.suicide(); 
-            }
-            else if (Directive.doesCreepHaveTask(c)) 
-            {
-                let taskName = Directive.getCreepTaskName(c); 
-                let task = Director.tasks[taskName]; 
-                if (task) 
-                {
-                    let finished = task.run(c, c.memory.task); 
-                    if (finished) 
-                    {
-                        Directive.finishCreepTask(c); 
-                    }
-                }
-                else 
-                {
-                    console.log(c.name + ' has invalid task: ' + taskName); 
-                    Directive.finishCreepTask(c); 
-                }
-            }
-            else if (!c.spawning) 
-            {
-                Director.log(c.name + ' is idle'); 
-            }
-        }
-        catch (e) { Director.log(e); console.log(e.stack); Game.notify(e.stack); } 
-    }
-
-    gc(); 
-    printMessages(); 
-
-    Travel.postFrame(); 
-    if (Memory.displayTravel) 
-    {
-        for (let name in Game.rooms) 
-        {
-            Travel.drawVisuals(Game.rooms[name]); 
-        }
-    }
-}
-
-Director.getCreepsByHomeroom = function(room) 
-{
-    return _.filter(Game.creeps, c => c.memory.home === room.name); 
-}
-
-Director.getCreepsByHomeroomAndRole = function(room, role) 
-{
-    let roles = {}; 
-    if (typeof(role) === 'string') 
-    {
-        roles[role] = true; 
-    }
-    else 
-    {
-        for (let i in role) roles[role[i]] = true; 
-    }
-
-    return _.filter(Game.creeps, c => c.memory.home === room.name && roles[c.memory.role]); 
-}
-
-Director.getCreepsByHomeroomAndRoleWithoutTask = function(room, role) 
-{
-    let roles = {}; 
-    if (typeof(role) === 'string') 
-    {
-        roles[role] = true; 
-    }
-    else 
-    {
-        for (let i in role) roles[role[i]] = true; 
-    }
-
-    return _.filter(Game.creeps, c => c.memory.home === room.name && roles[c.memory.role] && !c.memory.task); 
-}
-
-let gc = function() 
-{
     gcByName('creeps'); 
     gcByName('powerCreeps'); 
     gcByName('spawns'); 
@@ -285,64 +79,240 @@ let gc = function()
     }
 }
 
-let gcByName = function(entities) 
-{
-    for (let name in Memory[entities]) 
-    {
-        if (!Game[entities][name]) 
-        {
-            delete Memory[entities][name]; 
+/**
+ * @param {Room} home 
+ * @param {string|string[]} template 
+ * @return {Creep[]|Creep[][]} 
+ */
+Director.getIdleCreepsByHome = function(home, template) {
+    if (typeof template === 'string') {
+        return util.getField(creepData, `homes.${home.name}.templatesIdle.${template}`, []); 
+    }
+    else {
+        let out = []; 
+        for (let i = 0; i < template.length; i++) {
+            out = out.concat(Director.getIdleCreepsByHome(home, template[i])); 
         }
+        return out; 
     }
 }
 
-let isMyRoom = function(room) 
-{
-    return room && room.controller && room.controller.my; 
-}
-
-let handleMyRoom = function(room) 
-{
-    if (_.filter(Game.spawns, s => s.room === room).length === 0) 
-    {
-        Memory.needsSpawn[room.name] = true; 
+/**
+ * @param {Room} home 
+ * @param {string|string[]} template 
+ * @return {Creep[]|Creep[][]} 
+ */
+Director.getCreepsByHome = function(home, template) {
+    if (typeof template === 'string') {
+        return util.getField(creepData, `homes.${home.name}.templates.${template}`, []); 
     }
-    else 
-    {
-        delete Memory.needsSpawn[room.name]; 
-    }
-
-    let directives = getDirectives(room.controller.level); 
-
-    for (let i = 0; i < directives.length; i++) 
-    {
-        let dir = Director.directives[directives[i]]; 
-
-        if (dir) 
-        {
-            dir.run(room); 
+    else {
+        let out = []; 
+        for (let i = 0; i < template.length; i++) {
+            out = out.concat(Director.getCreepsByHome(home, template[i])); 
         }
-        else 
-        {
-            console.log('Unknown directive "' + directives[i] + '"'); 
-        }
+        return out; 
     }
 }
 
-let directivesByRcl = 
-{
-    1: ['general', 'spawn'],  
-    2: ['defense', 'mine', 'repair', 'supply', 'expand', 'build', 'upgrade', 'spawn']
-}; 
+/**
+ * @param {Room} home 
+ * @param {string|string[]} task 
+ * @return {Creep[]|Creep[][]} 
+ */
+Director.getWorkingCreepsByHome = function(home, task) {
+    if (typeof template === 'string') {
+        return util.getField(creepData, `homes.${home.name}.tasks.${task}`, []);
+    }
+    else {
+        let out = []; 
+        for (let i = 0; i < template.length; i++) {
+            out = out.concat(Director.getWorkingCreepsByHome(home, template[i])); 
+        }
+        return out; 
+    } 
+}
 
-let getDirectives = function(rcl) 
-{
-    for (let i = rcl; i >= 1; i--) 
-    {
-        if (directivesByRcl[i]) return directivesByRcl[i]; 
+/**
+ * @typedef SpawnRequest 
+ * @property {Room} room 
+ * @property {string} template 
+ * @property {boolean} [now = false] 
+ * @property {number} [priority = 1000]; 
+ */
+
+ /**
+  * @return {SpawnRequest} 
+  */
+Director.getSpawnRequestForRoom = function(room) {
+    if (sortSpawnRequests) {
+        // lower number come first 
+        spawnRequests.sort((a, b) => a.priority - b.priority);
+        sortSpawnRequests = false; 
+    }
+
+    for (let i in spawnRequests) {
+        let req = spawnRequests[i]; 
+
+        if (req.home === room.name) {
+            spawnRequests.splice(parseInt(i), 1); 
+            return req; 
+        }
+    }
+
+    return null; 
+} 
+
+Director.isSpawnRequestedForRoom = function(room) {
+    for (let i in spawnRequests) {
+        let req = spawnRequests[i]; 
+
+        if (req.room == room.name) return true; 
+    }
+
+    return false; 
+}
+
+/**
+ * @param {SpawnRequest} request
+ */
+Director.requestSpawn = function(request) {
+    _.defaults(request, {
+        now: false, 
+        priority: 1000 
+    });
+
+    spawnRequests.push(request); 
+    sortSpawnRequests = true; 
+}
+
+/**
+ * @param {number} rcl 
+ * @return {string[]} 
+ */
+const getDirectives = function (rcl) {
+    for (let i = rcl; i >= 1; i--) {
+        if (directivesByRcl[i]) return directivesByRcl[i];
     }
 
     // shouldn't happen 
-    console.log('ERROR: No directives for RCL ' + rcl); 
-    return []; 
+    return [];
+}
+
+/**
+ * @param {string} call 
+ */
+const handleRooms = function(call) {
+    for (let name in Game.rooms) {
+        util.invokeSafe(function() {
+            let room = Game.rooms[name]; 
+            if (isMyRoom(room)) {
+                handleMyRoom(room, call); 
+            }
+        }); 
+    }
+}
+
+/**
+ * @param {Room} room 
+ */
+const isMyRoom = function(room) {
+    return room.controller && room.controller.my; 
+}
+
+/**
+ * @param {Room} room 
+ * @param {string} call 
+ */
+const handleMyRoom = function(room, call) {
+    let rcl = room.controller.level; 
+
+    let directives = getDirectives(rcl); 
+
+    for (let i = 0; i < directives.length; i++) {
+        let name = directives[i]; 
+        let directive = Director.directives[name]; 
+        if (directive) {
+            _.defaults(directive, {
+                name: name, 
+                rooms: {} 
+            });
+            _.defaults(directive.rooms, {
+                [room.name]: {} 
+            });
+            let directiveFunction = directive[call]; 
+            if (directiveFunction) {
+                util.invokeSafe(function() {
+                    directiveFunction(room);
+                });  
+            }
+        }
+    }
+}
+
+const processData = function() {
+    spawnRequests = []; 
+    creepData = {
+        homes: {}
+    }; 
+
+    for (let name in Game.creeps) {
+        let c = Game.creeps[name]; 
+
+        if (c.my) {
+            let home = util.getField(c.memory, 'home'); 
+            let task = util.getField(c.memory, 'task.id'); 
+            let template = util.getField(c.memory, 'template'); 
+
+            let templateList = util.requireField(creepData.homes, `${home}.templates.${template}`, []); 
+
+            templateList.push(c); 
+
+            if (task) {
+                let taskList = util.requireField(creepData.homes, `${home}.tasks.${task}`, []); 
+                taskList.push(c); 
+            }
+            else {
+                let idleList = util.requireField(creepData.homes, `${home}.templatesIdle.${template}`, []); 
+                idleList.push(c); 
+            }
+        }
+        else {
+            creepData.foreigners.push(c); 
+        }
+    }
+}
+
+const handleCreeps = function() {
+    for (let name in Game.creeps) {
+        let creep = Game.creeps[name]; 
+
+        if (creep.my) {
+            let taskName = util.getField(creep.memory, 'task.id');
+            
+            if (taskName) {
+                let task = Director.tasks[taskName]; 
+                if (task) {
+                    let finished = task.run(creep, creep.memory.task); 
+                    if (finished) {
+                        util.finishCreepTask(creep); 
+                    }
+                }
+                else {
+                    util.log(name + ' has unknown task: ' + taskName); 
+                }
+            }
+            else if (!creep.spawning) {
+                util.log(name + ' does not have task'); 
+            }
+        }
+    }
+}
+
+let gcByName = function (entities) {
+    for (let name in Memory[entities]) {
+        if (!Game[entities][name]) {
+            delete Memory[entities][name];
+        }
+    }
 }

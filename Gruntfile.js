@@ -16,6 +16,24 @@ module.exports = function(grunt) {
         });
     }
 
+    let uploadConfig = {}; 
+    let copyConfig = {}; 
+
+    let build = ['clean', 'copy:screeps']; 
+    let buildMin = ['clean', 'webpack:dist']; 
+
+    let local = grunt.option('local'); 
+    if (local) {
+        build.push('copy:local'); 
+        copyConfig = config[local]; 
+    }
+
+    let upload = grunt.option('upload'); 
+    if (upload) {
+        build.push('screeps'); 
+        uploadConfig = config[upload]; 
+    }
+
     grunt.loadNpmTasks('grunt-screeps'); 
     grunt.loadNpmTasks('grunt-contrib-clean'); 
     grunt.loadNpmTasks('grunt-contrib-copy'); 
@@ -26,14 +44,14 @@ module.exports = function(grunt) {
         screeps: {
             options: {
                 server: {
-                    host: config.private.host, 
-                    port: config.private.port, 
-                    http: config.private.http 
+                    host: uploadConfig.host, 
+                    port: uploadConfig.port, 
+                    http: uploadConfig.http 
                 }, 
-                email: config.private.email, 
-                password: config.private.password, 
-                branch: config.private.branch || 'default', 
-                ptr: false 
+                email: uploadConfig.email, 
+                password: uploadConfig.password, 
+                branch: uploadConfig.branch || 'default', 
+                ptr: uploadConfig.ptr || false
             }, 
             dist: {
                 src: [dest + '*.js'] 
@@ -65,12 +83,12 @@ module.exports = function(grunt) {
                     filter: 'isFile'
                 }]
             }, 
-            sim: {
+            local: {
                 files: [{
                     expand: true, 
                     cwd: dest, 
                     src: '**.js', 
-                    dest: config.sim.dest, 
+                    dest: copyConfig.dest, 
                     filter: 'isFile'
                 }]
             }
@@ -81,10 +99,9 @@ module.exports = function(grunt) {
         }
     });
 
-    grunt.registerTask('build', ['clean', 'copy:screeps']); 
-    grunt.registerTask('build-min', ['clean', 'webpack:dist']); 
+    grunt.registerTask('default', build); 
+    grunt.registerTask('build', build); 
+    grunt.registerTask('build-min', buildMin); 
     grunt.registerTask('stable',  ['clean', 'webpack:dist', 'copy:stable']);
-    grunt.registerTask('private',  ['screeps']);
-    grunt.registerTask('sim',  ['copy:sim']);
 
 }
