@@ -1,8 +1,7 @@
 'use strict' 
 
-const template = module.exports; 
-
 const sort = require('./sort'); 
+const util = require('./util'); 
 
 /**
  * Holds settings for creating a creep 
@@ -18,8 +17,8 @@ const sort = require('./sort');
  * @property {number} [maxParts = 50] 
  */
 
-/** @type {Record<string, BodyTemplate>} */
-template.bodies = {
+/** @type {Object<string, BodyTemplate>} */
+const types = {
     general: {
         base: [WORK, CARRY], 
         movesPerPart: 1 
@@ -89,9 +88,9 @@ for (let key in sortingMethods) {
 }
 
 // give template bodies default names 
-for (let key in template.bodies) {
+for (let key in types) {
     /** @type {BodyTemplate} */
-    let t = template.bodies[key]; 
+    let t = types[key]; 
 
     if (t.name === undefined) {
         t.name = key; 
@@ -103,24 +102,24 @@ for (let key in template.bodies) {
 
 /**
  * @param {number} maxEnergy 
- * @param {BodyTemplate|string} template
+ * @param {BodyTemplate|string} type
  */
-template.createBody = function(maxEnergy, templateName) {
-    if (typeof templateName === 'string') {
-        templateName = template.bodies[templateName]; 
+function createBody(maxEnergy, type) {
+    if (typeof type === 'string') {
+        type = types[type]; 
     }
 
-    if (!templateName) return null; 
+    if (!type) return null; 
 
-    _.defaults(templateName, {
+    _.defaults(type, {
         add: [], 
         buildStyle: 'standard', 
         movesPerPart: 0.5, 
         maxParts: 50 
     }); 
 
-    let parts = _.clone(templateName.base); 
-    let toAdd = _.clone(templateName.add).reverse(); 
+    let parts = _.clone(type.base); 
+    let toAdd = _.clone(type.add).reverse(); 
 
     let moveCount = _.filter(parts, x => x === MOVE).length; 
     let fatigueCount = parts.length - moveCount; 
@@ -128,7 +127,7 @@ template.createBody = function(maxEnergy, templateName) {
     moveCount++; 
 
     const addMoveParts = function(add) {
-        let targetMoveCount = Math.round(fatigueCount * templateName.movesPerPart); 
+        let targetMoveCount = Math.round(fatigueCount * type.movesPerPart); 
         let left = targetMoveCount - moveCount; 
         for (let i = 0; i < left; i++) {
             add.push(MOVE); 
@@ -143,9 +142,9 @@ template.createBody = function(maxEnergy, templateName) {
     addMoveParts(parts); 
     let curCost = BODYPART_COST[MOVE] + util.getBodyCost(parts); 
 
-    if (templateName.add.length) {
+    if (type.add.length) {
         let i = 0; 
-        while (parts.length + 1 < templateName.maxParts && curCost < maxEnergy) {
+        while (parts.length + 1 < type.maxParts && curCost < maxEnergy) {
             let add = []; 
             add.push(toAdd[i % toAdd.length]); 
             fatigueCount += getFatiguePartCount(add); 
@@ -164,11 +163,16 @@ template.createBody = function(maxEnergy, templateName) {
         }
     }
 
-    const method = sortingMethods[templateName.buildStyle]; 
+    const method = sortingMethods[type.buildStyle]; 
     sort.countSort(parts, x => method[x], 0, 9);
 
     // last move always at end 
     parts.push(MOVE); 
 
     return parts; 
+}
+
+module.exports = {
+    bodies: types, 
+    createBody 
 }

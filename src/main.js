@@ -1,19 +1,15 @@
 'use strict' 
 
-require('./Director'); 
-require('./prototype'); 
-require('./util'); 
+const director = require('./director'); 
+const log = require('./log'); 
+const util = require('./util'); 
 
-util.log('Initializing the Director'); 
+require('./gen-prototypes'); 
 
-util.invokeSafe(function() {
-    util.init(); 
-    Director.init(); 
-}); 
+log.write('Initializing the Director'); 
 
 module.exports.loop = function() {
-    util.invokeSafe(function() {
-        Director.run(); 
-        util.update(); 
-    }); 
+    director.update(); 
+    util.update(); 
+
 } 

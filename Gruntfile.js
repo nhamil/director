@@ -12,7 +12,7 @@ module.exports = function(grunt) {
         const prefix = (path.dirname(srcPath) + '/').substring(src.length);
         return content.replace(/require\s*\(\s*['"](.*)['"]\s*\)/g, (found) => {
             let requirePath = /['"](.*)['"]/.exec(found)[1]; 
-            return "require('" + path.normalize(prefix + requirePath).replace(/[\\/]/g, '.') + "')"; 
+            return "require('./" + path.normalize(prefix + requirePath).replace(/[\\/]/g, '.') + "')"; 
         });
     }
 
@@ -66,7 +66,7 @@ module.exports = function(grunt) {
             screeps: {
                 expand: true, 
                 cwd: src, 
-                src: '**', 
+                src: '**/*.js', 
                 dest: dest, 
                 filter: 'isFile', 
                 rename: (dest, src) => dest + src.replace(/\//g, '.'),
@@ -78,7 +78,7 @@ module.exports = function(grunt) {
                 files: [{
                     expand: true, 
                     cwd: dest, 
-                    src: '**.js', 
+                    src: '*.js', 
                     dest: 'stableBuild/', 
                     filter: 'isFile'
                 }]
@@ -87,7 +87,7 @@ module.exports = function(grunt) {
                 files: [{
                     expand: true, 
                     cwd: dest, 
-                    src: '**.js', 
+                    src: '*.js', 
                     dest: copyConfig.dest, 
                     filter: 'isFile'
                 }]

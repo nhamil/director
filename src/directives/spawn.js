@@ -1,74 +1,78 @@
 'use strict' 
 
-const dir = module.exports; 
+const log = require('../log'); 
+const template = require('../template'); 
+const util = require('../util'); 
+const Directive = require('./directive'); 
 
-/**
- * @param {Room} room 
- */
-dir.run = function(room) {
-    for (let name in Game.spawns) {
-        let spawn = Game.spawns[name]; 
-        if (spawn.room === room) {
-            trySpawn(room, spawn); 
+class SpawnDirective extends Directive {
+
+    postFrame() {
+        let spawns = this.room.find(FIND_MY_SPAWNS); 
+
+        for (let i in spawns) {
+            this.trySpawn(spawns[i]); 
         }
     }
-}
 
-const trySpawn = function(room, spawn) {
-    let request = Director.getSpawnRequestForRoom(room); 
+    /**
+     * @param {StructureSpawn} spawn 
+     */
+    trySpawn(spawn) {
+        let request = this.getSpawnRequest(); 
 
-    if (request) {
-        let msg = 'Request to spawn "' + request.template + '"'; 
-        if (request.now) msg += ' immediately'; 
-        if (request.now) util.logRoom(room, msg); 
+        if (request) {
+            let msg = `Request to spawn "${request.templateName}`; 
+            if (request.now) {
+                msg += ' immediately'; 
+            }
+            log.writeRoom(this.room, msg); 
 
-        let templateName = request.template; 
-        let template = Director.templates.bodies[templateName]; 
+            let templateName = request.templateName; 
+            let type = template.bodies[templateName]; 
 
-        let energyAllowance = request.now ? room.energyAvailable : room.energyCapacityAvailable; 
+            let energyAllowance = request.now ? this.room.energyAvailable : this.room.energyCapacityAvailable; 
 
-        // TODO if no creeps to bring energy to extensions 
-        //      use energyAvailable 
+            // TODO if no creeps to bring energy to extensions 
+            //      use energyAvailable 
 
-        if (template) {
-            let build = Director.templates.createBody(energyAllowance, template); 
+            if (type) {
+                let build = template.createBody(energyAllowance, type); 
 
-            if (build) {
-                spawnCreep(spawn, room.name, template, build); 
+                if (build && build.length) {
+                    this.spawnCreep(spawn, this.room.name, type, build); 
+                }
+                else {
+                    log.writeRoom(this.room, 'Template "' + templateName + '" did not provide a body, trying next request'); 
+                    this.trySpawn(spawn); 
+                }
             }
             else {
-                util.logRoom(room, 'Template "' + templateName + '" did not provide a body, trying next request'); 
-                trySpawn(room, spawn); 
+                log.writeRoom(this.room, 'Template "' + templateName + '" is invalid, trying next request'); 
+                this.trySpawn(spawn); 
             }
         }
-        else {
-            util.logRoom(room, 'Template "' + templateName + '" is invalid, trying next request'); 
-            trySpawn(room, spawn); 
+    }
+
+    /**
+     * @param {StructureSpawn} spawn 
+     * @param {BodyTemplate} type 
+     */
+    spawnCreep(spawn, homeName, type, build) {
+        let name = util.randomName(type.shortName); 
+
+        let res = spawn.spawnCreep(build, name, {
+            memory: {
+                template: type.name, 
+                home: homeName 
+            }
+        });
+
+        if (res === OK) {
+            log.writeRoom(this.room, 'Spawned ' + name + ' (' + build + ')'); 
         }
     }
+
 }
 
-/**
- * @param {StructureSpawn} spawn 
- * @param {string} homeName 
- * @param {string} roleName 
- * @param {Array} build 
- */
-const spawnCreep = function(spawn, homeName, template, build) {
-    let name = util.getRandomName(template.shortName); 
-    let res = spawn.spawnCreep(build, name, {
-        memory: {
-            template: template.name, 
-            home: homeName 
-        }
-    });
-
-    if (res === OK) 
-    {
-        console.log('Spawned ' + name + ' in room ' + homeName + ' (' + build + ')'); 
-    }
-    // else 
-    // {
-    //     console.log('Could not create ' + name + ': ' + res); 
-    // }
-}
+module.exports = SpawnDirective; 

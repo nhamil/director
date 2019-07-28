@@ -1,6 +1,6 @@
 'use strict'
 
-global.util = module.exports;
+const log = require('./log'); 
 
 const statusShorthands = {
     harvest: '🌾',
@@ -12,84 +12,69 @@ const statusShorthands = {
     repair: '🛠️'
 };
 
-const computeTickRate = function() {
-    util.requireField(Memory, 'ticks', []); 
-    let time = Math.floor(new Date().getTime() / 1000); 
-    let ticks = Memory.ticks; 
-    let total = 0; 
+function computeTickRate() {
+    requireField(Memory, 'ticks', []);
+    let time = Math.floor(new Date().getTime() / 1000);
+    let ticks = Memory.ticks;
+    let total = 0;
     let duration = 10; // seconds
     for (let i = 0; i < ticks.length;) {
         if (time - Memory.ticks[i] > duration) {
-            ticks.splice(i, 1); 
+            ticks.splice(i, 1);
         }
         else {
-            total++; 
-            i++; 
+            total++;
+            i++;
         }
     }
-    return total / duration; 
+    return total / duration;
 }
 
-util.cacheTime = 0;
-util.updateLog = false; 
+let cacheTime = 0;
+let updateLog = false;
+let tickRate = 0; 
 
-util.init = function() {
-    util.requireField(Memory, 'lastLog', Game.time); 
-    util.requireField(Memory, 'ticks', []); 
-    util.tickRate = computeTickRate(); 
+function init() {
+    requireField(Memory, 'lastLog', Game.time);
+    requireField(Memory, 'ticks', []);
+    tickRate = computeTickRate();
 }
 
-util.update = function () {
-    util.cacheTime++;
+function update() {
+    cacheTime++;
 
-    let time = Math.floor(new Date().getTime() / 1000); 
+    let time = Math.floor(new Date().getTime() / 1000);
     /** @type {Array<number>} */
-    let ticks = Memory.ticks; 
-    ticks.push(time); 
+    let ticks = Memory.ticks;
+    ticks.push(time);
 
-    let rate = util.tickRate = computeTickRate();; 
+    let rate = tickRate = computeTickRate();;
     new RoomVisual().text('TPS: ' + rate, 24.5, 1.5, {
-        align: 'center' 
-    }); 
+        align: 'center'
+    });
 
-    if (Game.time - Memory.lastLog > util.tickRate) {
-        util.updateLog = true; 
+    if (Game.time - Memory.lastLog > tickRate) {
+        updateLog = true;
     }
 
-    if (util.updateLog) {
-        Memory.lastLog = Game.time; 
-        util.updateLog = false; 
-        console.log('Tick Rate: ' + util.tickRate); 
+    if (updateLog) {
+        Memory.lastLog = Game.time;
+        updateLog = false;
+        log.write('Tick Rate: ' + tickRate);
     }
-}
-
-/**
- * @param {any} msg 
- */
-util.log = function (msg) {
-    if (typeof msg !== 'string') msg = JSON.stringify(msg);
-
-    console.log(msg);
 }
 
 /**
  * @param {Room} room 
- * @param {any} msg 
  */
-util.logRoom = function (room, msg) {
-    if (typeof msg !== 'string') msg = JSON.stringify(msg);
-
-    console.log(room.name + ': ' + msg);
-}
-
-util.or = function (value, def) {
-    return value === undefined ? def : value;
+function isMyRoom(room) {
+    return room && room.controller && room.controller.my; 
 }
 
 /**
  * @param {string[]} build 
  */
-util.getBodyCost = function (build) {
+function getBodyCost(build) {
     let sum = 0;
     for (let i = 0; i < build.length; i++) {
         sum += BODYPART_COST[build[i]];
@@ -100,15 +85,15 @@ util.getBodyCost = function (build) {
 /**
  * @param {string} baseName
  */
-util.getRandomName = function (baseName) {
+function randomName(baseName) {
     return '' + baseName + Math.floor(Math.random() * 1000);
 }
 
 /**
  * @param {string} template
- * @return {(c: Creep) => boolean}
+ * @returns {(c: Creep) => boolean}
  */
-util.isCreepOfTemplate = function (template) {
+function isCreepOfTemplate(template) {
     return c => c.memory.template === template;
 }
 
@@ -116,7 +101,7 @@ util.isCreepOfTemplate = function (template) {
  * @param {Creep[]} creeps 
  * @param {RoomObject} target 
  */
-util.getIndexOfClosestCreep = function (creeps, target) {
+function getIndexOfClosestCreep(creeps, target) {
     let best = Infinity;
     let index = -1;
 
@@ -136,7 +121,7 @@ util.getIndexOfClosestCreep = function (creeps, target) {
  * @param {function} fn 
  * @returns Whether `fn` was called 
  */
-util.onInterval = function (interval, fn) {
+function onInterval(interval, fn) {
     if (Game.time % interval === 0) {
         fn();
         return true;
@@ -149,15 +134,15 @@ util.onInterval = function (interval, fn) {
  * @param {function} fn 
  * @returns Whether `fn` was called 
  */
-util.onCacheInterval = function (interval, fn) {
-    if (util.cacheTime % interval === 0) {
+function onCacheInterval(interval, fn) {
+    if (cacheTime % interval === 0) {
         fn();
         return true;
     }
     return false;
 }
 
-util.getDateCst = function (date = new Date()) {
+function getDateCst(date = new Date()) {
     return new Date(date.getTime() - 5 * 3600 * 1000).toUTCString().replace('GMT', 'CST');
 }
 
@@ -165,14 +150,14 @@ util.getDateCst = function (date = new Date()) {
  * @param {RoomPosition} a 
  * @param {RoomPosition} b
  */
-util.arePositionsEqual = function (a, b) {
+function arePositionsEqual(a, b) {
     return a.x == b.x && a.y == b.y && a.roomName == b.roomName;
 }
 
 /**
  * @param {string} memData 
  */
-util.stringToPosition = function (memData) {
+function stringToPosition(memData) {
     try {
         let out = memData.split(',');
         return new RoomPosition(parseInt(out[0]), parseInt(out[1]), out[2]);
@@ -183,7 +168,7 @@ util.stringToPosition = function (memData) {
 /**
  * @param {RoomPosition} pos 
  */
-util.positionToString = function (pos) {
+function positionToString(pos) {
     return pos.x + ',' + pos.y + ',' + pos.roomName;
 }
 
@@ -191,7 +176,7 @@ util.positionToString = function (pos) {
  * @param {function} run 
  * @param {function(Error)} [err] 
  */
-util.invokeSafe = function (run, err) {
+function invokeSafe(run, err) {
     try {
         run();
     }
@@ -212,7 +197,7 @@ util.invokeSafe = function (run, err) {
  * @param {string} path 
  * @param {any} [def]
  */
-util.getField = function (obj, path, def = null) {
+function getField(obj, path, def = null) {
     if (obj == null) return def;
 
     let fields = path.split('.');
@@ -237,7 +222,7 @@ util.getField = function (obj, path, def = null) {
  * @param {string} path 
  * @param {any} [def]
  */
-util.requireField = function (obj, path, def = {}) {
+function requireField(obj, path, def = {}) {
     if (obj == null) throw 'Base object must exist';
 
     let fields = path.split('.');
@@ -264,14 +249,14 @@ util.requireField = function (obj, path, def = {}) {
 /**
  * @param {Creep} c 
  */
-util.finishCreepTask = function (c) {
+function finishCreepTask(c) {
     delete c.memory.task;
 }
 
 /**
  * @param {Creep} creep 
  */
-util.assignTaskToCreep = function (creep, taskInfo) {
+function assignTaskToCreep(creep, taskInfo) {
     creep.memory.task = taskInfo;
     let status = statusShorthands[taskInfo.id] || taskInfo.id;
 
@@ -281,7 +266,7 @@ util.assignTaskToCreep = function (creep, taskInfo) {
 /**
  * @param {Creep} creep 
  */
-util.getCreepTaskName = function (creep) {
+function getCreepTaskName(creep) {
     let info = creep.memory.task || {};
     return info.id;
 }
@@ -289,18 +274,18 @@ util.getCreepTaskName = function (creep) {
 /**
  * @param {Creep} creep 
  */
-util.getCreepTask = function (creep) {
+function getCreepTask(creep) {
     return creep.memory.task;
 }
 
 /**
  * @param {Creep} creep 
  */
-util.doesCreepHaveTask = function (creep) {
+function doesCreepHaveTask(creep) {
     return Directive.getCreepTaskName(creep) != null;
 }
 
-util.doOrMoveTo = function (creep, target, action, opts = {}) {
+function doOrMoveTo(creep, target, action, opts = {}) {
     opts.ok = opts.ok || [OK];
 
     let status = 0;
@@ -316,12 +301,28 @@ util.doOrMoveTo = function (creep, target, action, opts = {}) {
     }
 }
 
-/**
- * @param {Array} array, 
- * @param {function} fn 
- */
-util.forEach = function(array, fn) {
-    for (let i = 0; i < array.length; i++) {
-        fn(array[i]); 
-    }
-}
+init(); 
+
+module.exports = {
+    arePositionsEqual,
+    assignTaskToCreep,
+    doesCreepHaveTask,
+    doOrMoveTo,
+    finishCreepTask,
+    getBodyCost,
+    getCreepTask,
+    getCreepTaskName,
+    getDateCst,
+    getField,
+    getIndexOfClosestCreep,
+    randomName,
+    invokeSafe,
+    isCreepOfTemplate,
+    isMyRoom, 
+    onCacheInterval,
+    onInterval,
+    positionToString,
+    requireField,
+    stringToPosition,
+    update
+};

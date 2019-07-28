@@ -1,28 +1,38 @@
 'use strict' 
 
-const dir = module.exports; 
+const log = require('../log'); 
+const util = require('../util'); 
+const DirectiveBase = require('./directive'); 
 
-dir.preFrame = function(room) {
-    Director.requestSpawn({
-        home: room.name, 
-        template: 'general' 
-    });
-}
+class GeneralDirective extends DirectiveBase {
 
-dir.run = function(room) {
-    let list = Director.getIdleCreepsByHome(room, 'general'); 
+    constructor(room) {
+        super(room); 
+    }
 
-    for (let c of list) {
-        if (_.sum(c.carry) === 0) {
-            util.assignTaskToCreep(c, {
-                id: 'withdraw' 
-            });
-        }
-        else {
-            util.assignTaskToCreep(c, {
-                id: 'upgrade', 
-                target: room.name 
-            });
+    preFrame() {
+        this.idle = this.getIdleCreepsByTemplate('general'); 
+
+        // this.requestSpawn('general'); 
+        
+    }
+
+    update() {
+        for (let c of this.idle) {
+            if (_.sum(c.carry) === 0) {
+                util.assignTaskToCreep(c, {
+                    id: 'withdraw' 
+                });
+            }
+            else {
+                util.assignTaskToCreep(c, {
+                    id: 'upgrade', 
+                    target: room.name 
+                });
+            }
         }
     }
+
 }
+
+module.exports = GeneralDirective; 
