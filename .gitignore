@@ -1,6 +1,6 @@
 .vs/
 node_modules/
-dist/
+build/
 tmp/
 config.json
 package-lock.json

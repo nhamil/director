@@ -1,10 +1,17 @@
+const glob = require('glob'); 
+
 module.exports = {
     mode: "production", 
     entry: "./src/main.js",
     output: {
-        filename: "./main.js",
+        filename: "./[name].js",
         pathinfo: false,
         libraryTarget: "commonjs2",
+    },
+    optimization: {
+        splitChunks: {
+            chunks: "all" 
+        }
     },
 
     target: "node",

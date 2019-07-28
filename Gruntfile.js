@@ -3,6 +3,18 @@ const path = require('path');
 module.exports = function(grunt) {
 
     const config = require('./config.json'); 
+    const webpackConfig = require('./webpack.config'); 
+    const src = 'src/'; 
+    const dest = 'build/'; 
+    webpackConfig.output.path = path.resolve(__dirname, dest); 
+
+    const processFile = function(content, srcPath) {
+        const prefix = (path.dirname(srcPath) + '/').substring(src.length);
+        return content.replace(/require\s*\(\s*['"](.*)['"]\s*\)/g, (found) => {
+            let requirePath = /['"](.*)['"]/.exec(found)[1]; 
+            return "require('" + path.normalize(prefix + requirePath).replace(/[\\/]/g, '.') + "')"; 
+        });
+    }
 
     grunt.loadNpmTasks('grunt-screeps'); 
     grunt.loadNpmTasks('grunt-contrib-clean'); 
@@ -24,38 +36,39 @@ module.exports = function(grunt) {
                 ptr: false 
             }, 
             dist: {
-                src: ['dist/*.js'] 
+                src: [dest + '*.js'] 
             }
         }, 
 
         clean: {
-            'dist': ['dist'], 
+            dist: [dest + '**/*.*'], 
         }, 
 
         copy: {
             screeps: {
-                files: [{
-                    expand: true, 
-                    cwd: 'src/', 
-                    src: '**', 
-                    dest: 'dist/', 
-                    filter: 'isFile', 
-                    rename: (dest, src) => dest + src.replace(/\//g, '.') 
-                }]
+                expand: true, 
+                cwd: src, 
+                src: '**', 
+                dest: dest, 
+                filter: 'isFile', 
+                rename: (dest, src) => dest + src.replace(/\//g, '.'),
+                options: {
+                    process: processFile
+                }
             }, 
             stable: {
                 files: [{
                     expand: true, 
-                    cwd: 'dist/', 
+                    cwd: dest, 
                     src: '**.js', 
-                    dest: 'stable/', 
+                    dest: 'stableBuild/', 
                     filter: 'isFile'
                 }]
             }, 
             sim: {
                 files: [{
                     expand: true, 
-                    cwd: 'dist/', 
+                    cwd: dest, 
                     src: '**.js', 
                     dest: config.sim.dest, 
                     filter: 'isFile'
@@ -64,7 +77,7 @@ module.exports = function(grunt) {
         }, 
 
         webpack: {
-            dist: require('./webpack.config') 
+            dist: webpackConfig 
         }
     });
 
