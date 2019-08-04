@@ -10,7 +10,7 @@ class Scheduler {
         /**
          * @type {Object<number, Process>} 
          */
-        this.processes = {}; 
+        this.procCache = {}; 
     }
 
     get memory() {
@@ -44,7 +44,7 @@ class Scheduler {
                 this.memory.queues[priority].push(pid); 
                 this.memory.processes[pid] = mem; 
 
-                console.log('Creating process "' + path + '": ' + pid); 
+                // console.log('Creating process "' + path + '": ' + pid); 
             }
             catch (e) {
                 console.log('Error creating process "' + path + '"'); 
@@ -59,14 +59,14 @@ class Scheduler {
         const mem = this.memory.processes[pid]; 
 
         if (mem) {
-            if (!this.processes[pid]) {
+            if (!this.procCache[pid]) {
                 const proc = this._instantiateProcess(mem.path, pid, mem); 
                 proc.reload(); 
 
-                this.processes[pid] = proc; 
+                this.procCache[pid] = proc; 
             }
 
-            return this.processes[pid]; 
+            return this.procCache[pid]; 
         }
 
         return null; 
@@ -127,7 +127,7 @@ class Scheduler {
 
     getProcess(pid) {
         if (this.doesPidExist(pid)) {
-            let proc = this.processes[pid]; 
+            let proc = this.procCache[pid]; 
 
             if (!proc) {
                 proc = this._reloadProcess(pid); 
@@ -204,7 +204,7 @@ class Scheduler {
                     console.log('Error running PID ' + pid + ' ("' + path + '"): ' + e); 
                 }
             }
-            mem.cur = (Game.cpu.getUsed() - start).toFixed(2); 
+            mem.cur = parseFloat((Game.cpu.getUsed() - start).toFixed(2)); 
             
             this.memory.running = 0; 
             this.memory.completed.push(pid); 
@@ -245,7 +245,7 @@ class Scheduler {
                 this.memory.queues[priority].push(pid); 
             }
             else {
-                console.log('Process does not exist: ' + pid + ', cannot schedule'); 
+                // console.log('Process does not exist: ' + pid + ', cannot schedule'); 
             }
         }
 
@@ -270,13 +270,13 @@ class Scheduler {
 
             mem.cpu = mem.cpu || []; 
             mem.cpu.push(mem.cur || 0); 
-            mem.max = Math.max(parseInt(mem.cur), parseInt(mem.max)); 
+            mem.max = Math.max(mem.cur, mem.max); 
             if (mem.cpu.length > 10) mem.cpu.shift(); 
         }
-        for (let i in this.processes) {
-            const proc = this.processes[i]; 
+        for (let i in this.procCache) {
+            const proc = this.procCache[i]; 
             if (!this.memory.processes[proc.pid]) {
-                delete this.processes[i]; 
+                delete this.procCache[i]; 
             }
         }
     }

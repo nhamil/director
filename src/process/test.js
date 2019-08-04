@@ -2,10 +2,12 @@
 
 class Test extends kernel.Process {
 
-    create(args) {
-        console.log('test: create'); 
+    get description() {
+        return 'testing'; 
+    }
 
-        this.data.time = Game.time + 10; 
+    create(args) {
+        this.data.time = 10; 
     }
 
     reload() {
@@ -13,19 +15,18 @@ class Test extends kernel.Process {
     }
 
     run() {
-        // this.startProcess('./test'); 
-
-        // if (Math.random() < 0.5) this.sleep(); 
-        
-        for (let i = 0; i < 1000000; i++) {
+        for (let i = 0; i < 10000; i++) {
             this.data.value++; 
         }
 
-        if (parseInt(this.data.time) < Game.time) this.exit(); 
+        this.data.time--; 
 
-        // this.sleep(2); 
-
-        // if (Math.random() < 0.5) this.exit(); 
+        if (this.data.time <= 0) {
+            this.exit(); 
+        }
+        else if (Math.random() < 0.1) {
+            // this.sleep(10); 
+        }
     }
 
 }

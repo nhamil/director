@@ -113,13 +113,13 @@ class Kernel {
             return sum.toFixed(2); 
         }
 
-        out += ' pid  | name                 | status | cur cpu | avg cpu | max cpu | description          \n'; 
-        out += '------+----------------------+--------+---------+---------+---------+----------------------\n'; 
+        out += ' pid  | name                 | status | cur cpu | avg cpu | max cpu | description                      \n'; 
+        out += '------+----------------------+--------+---------+---------+---------+----------------------------------\n'; 
 
         const pids = _.keys(this.__memory.processes); 
 
         pids.sort((a, b) => 
-            parseFloat(this.__memory.processes[b].cur) - parseFloat(this.__memory.processes[a].cur)
+            this.__memory.processes[b].cur - this.__memory.processes[a].cur
         ); 
 
         for (let pid of pids) {
@@ -127,7 +127,7 @@ class Kernel {
             out += ' '; 
             out += padStart(pid, 4); 
             out += ' | '; 
-            out += pad(mem.path, 20); 
+            out += pad(mem.path.replace(/process_/g, ''), 20); 
             out += ' | '; 
             out += pad(STATUS_NAME[mem.stat || STATUS_ACTIVE], 6); 
             out += ' | '; 
@@ -137,7 +137,7 @@ class Kernel {
             out += ' | '; 
             out += padStart((parseFloat(mem.max) || 0).toFixed(2), 7); 
             out += ' | '; 
-            out += pad(mem.desc || '(none)', 20); 
+            out += pad(mem.desc || '(none)', 32); 
             out += '\n'; 
         }
 
@@ -212,10 +212,10 @@ class Kernel {
      * Resets all OS memory 
      */
     __reset() {
-        console.log('Resetting the Kernel'); 
-        
         delete Memory.os; 
         kernel = new Kernel(); 
+
+        return 'Resetting the Kernel'; 
     }
 
 }

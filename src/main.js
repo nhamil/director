@@ -19,13 +19,23 @@ global.kernel = new Kernel();
 Memory.cpu = Memory.cpu || 0; 
 Memory.lastReload = Game.time; 
 
+let lastUpdate = 0; 
+let out = ''; 
+
 module.exports.loop = function () {
     bucketCheck(); 
     kernel.__run(); 
 
-    const pidTable = kernel.pidTable; 
-    printScriptStats(pidTable); 
+    const time = new Date().getTime(); 
 
+    if (time - lastUpdate >= 1000) {
+        const pidTable = kernel.pidTable; 
+        printScriptStats(pidTable); 
+    }
+    else {
+        printData(out); 
+    }
+    
     // Memory.cpu = Game.cpu.getUsed() * 1.15; 
 }
 
@@ -36,7 +46,7 @@ function printScriptStats(pidTable) {
     const cpu = Game.cpu.getUsed() * 1.0 / Game.cpu.limit; 
     const bucket = Game.cpu.bucket / 10000; 
 
-    let out = ''; 
+    out = ''; 
     out += 'Last Reload: ' + (Game.time - Memory.lastReload) + ' tick(s)\n\n'; 
     out += 'CPU : ['; 
     for (let i = 0; i < length; i++) {
