@@ -4,6 +4,9 @@
     },
     "include": [
         "src/**/*", 
-        "types.d.ts" 
+        "src/constants.js"
+    ], 
+    "files": [
+        "src/types.d.ts" 
     ]
 }

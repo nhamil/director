@@ -1,12 +1,16 @@
-const sort = module.exports; 
+'use strict' 
+
+const identity = (x) => x; 
+
+const defaultCompare = (a, b) => a - b; 
 
 /**
  * @param {Array} array 
- * @param {(elem) => number} mapper 
  * @param {number} min 
  * @param {number} max 
+ * @param {(elem) => number} mapper 
  */
-sort.countSort = function(array, mapper, min, max) {
+function countSort(array, min, max, mapper = identity) {
     let tmp = {}; 
 
     for (let i = min; i <= max; i++) {
@@ -31,24 +35,24 @@ sort.countSort = function(array, mapper, min, max) {
 }
 
 /**
- * @param {Array} array 
- * @param {function} compare 
+ * @param {Array<E>} array 
+ * @param {(a, b) => number} compare 
  */
-sort.quicksort = function(array, compare) {
-    return sort.quicksortRange(array, 0, array.length - 1, compare); 
+function quicksort(array, compare = defaultCompare) {
+    return quicksortRange(array, 0, array.length - 1, compare); 
 }
 
 /**
  * @param {Array} array 
  * @param {number} left 
  * @param {number} right 
- * @param {function} compare 
+ * @param {(a, b) => number} compare 
  */
-sort.quicksortRange = function(array, left, right, compare) {
+function quicksortRange(array, left, right, compare = defaultCompare) {
     if (left < right) {
-        const index = sort.partition(array, left, right, compare); 
-        sort.quicksortRange(array, left, index - 1, compare); 
-        sort.quicksortRange(array, index + 1, right, compare); 
+        const index = partition(array, left, right, compare); 
+        quicksortRange(array, left, index - 1, compare); 
+        quicksortRange(array, index + 1, right, compare); 
     }
     return array; 
 }
@@ -59,7 +63,7 @@ sort.quicksortRange = function(array, left, right, compare) {
  * @param {number} right 
  * @param {(a, b) => number} compare
  */
-sort.partition = function(array, left, right, compare) {
+function partition(array, left, right, compare) {
     const pivot = array[right]; 
     let i = left - 1; 
 
@@ -79,8 +83,13 @@ sort.partition = function(array, left, right, compare) {
  * @param {number} a 
  * @param {number} b 
  */
-sort.swap = function(array, a, b) {
+function swap(array, a, b) {
     let tmp = array[a]; 
     array[a] = array[b]; 
     array[b] = tmp; 
 }
+
+module.exports = {
+    countSort, 
+    quicksort 
+};

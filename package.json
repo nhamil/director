@@ -5,7 +5,6 @@
   "main": "dist/main.js",
   "devDependencies": {
     "@types/lodash": "^4.14.108",
-    "@types/node": "^10.0.3",
     "@types/screeps": "^2.3.0",
     "grunt": "^1.0.4",
     "grunt-contrib-clean": "^2.0.0",

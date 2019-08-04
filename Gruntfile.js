@@ -10,10 +10,17 @@ module.exports = function(grunt) {
 
     const processFile = function(content, srcPath) {
         const prefix = (path.dirname(srcPath) + '/').substring(src.length);
-        return content.replace(/require\s*\(\s*['"](.*)['"]\s*\)/g, (found) => {
-            let requirePath = /['"](.*)['"]/.exec(found)[1]; 
-            return "require('./" + path.normalize(prefix + requirePath).replace(/[\\/]/g, '.') + "')"; 
-        });
+        return content.replace(/['"`](\.?\.\/.*)['"`]/g, (found) => {
+            let requirePath = /['"`](\.?\.\/.*)['"`]/.exec(found)[1]; 
+            return "'" + path.normalize(prefix + requirePath).replace(/[\\/]/g, '_') + "'"; 
+        }); 
+        // }).replace(/require\s*\(\s*['"](.*)['"]\s*\)/g, (found) => {
+        //     let requirePath = /['"](.*)['"]/.exec(found)[1]; 
+        //     return "require('" + path.normalize(prefix + requirePath).replace(/[\\/]/g, '_') + "')"; 
+        // }).replace(/start\s*\(\s*['"](.*)['"]\s*\)/g, (found) => {
+        //     let requirePath = /['"](.*)['"]/.exec(found)[1]; 
+        //     return "start('" + path.normalize(prefix + requirePath).replace(/[\\/]/g, '_') + "')"; 
+        // });
     }
 
     let uploadConfig = {}; 
@@ -69,7 +76,7 @@ module.exports = function(grunt) {
                 src: '**/*.js', 
                 dest: dest, 
                 filter: 'isFile', 
-                rename: (dest, src) => dest + src.replace(/\//g, '.'),
+                rename: (dest, src) => dest + src.replace(/\//g, '_'),
                 options: {
                     process: processFile
                 }
