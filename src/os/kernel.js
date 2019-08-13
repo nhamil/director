@@ -9,17 +9,27 @@ const Process = require('./process');
 const Scheduler = require('./scheduler'); 
 
 /**
- * @typedef ProcessMemory 
- * @property {string} path
- * @property {string} desc  
- * @property {Object} data 
+ * @typedef ProcessData 
+ * @property {string} path File path to process
+ * @property {string} [desc] Process description 
+ * @property {Object} data Process JSON data 
+ * @property {number} cpu Current CPU used
+ * @property {number} max Maximum CPU used
+ * @property {number[]} hist CPU usage history 
+ * @property {number} stat Process status 
+ * @property {number} [sleep] When to stop sleeping 
+ * @property {number} pri Process priority 
+ * @property {number} [ppid] PID of process' parent 
+ * @property {number[]} [children] List of child processes 
  * 
  * @typedef KernelMemory 
- * @property {Object<string, ProcessMemory>} processes 
- * @property {Object<number, number[]} queues 
- * @property {number[]} sleep
- * @property {number[]} completed 
- * @property {number} running  
+ * @property {Object<string, ProcessData>} processes Table of PIDs to process data
+ * @property {Object<number, number[]} queues PID queues
+ * @property {number[]} sleep Sleeping PIDs
+ * @property {number[]} completed PIDs that finished running for the tick 
+ * @property {number[]} frame PIDs that ran this tick, but are not done 
+ * @property {number} running Current running PID
+ * @property {boolean} hitWall Whether the queue wall was hit this frame 
  */
 
 class Kernel {
@@ -35,20 +45,23 @@ class Kernel {
                 queues: {}, 
                 sleep: [], 
                 completed: [], 
-                frame: [] 
+                frame: [], 
+                running: 0, 
+                hitWall: false 
             };
 
             for (let p = PRIORITY_HIGHEST; p <= PRIORITY_LOWEST; p++) {
                 Memory.os.queues[p] = []; 
             }
-
-            Memory.os.running = 0; 
         }
 
         /**
          * @type {KernelMemory} 
          */
         this.__memory = Memory.os; 
+        /**
+         * @type {Scheduler} 
+         */
         this.__scheduler = new Scheduler(this); 
     }
 
@@ -77,10 +90,31 @@ class Kernel {
     }
 
     /**
+     * Number of times processes were run this tick 
+     */
+    get runCount() {
+        return this.__scheduler.runCount; 
+    }
+
+    /**
      * The currently running PID
      */
     get running() {
-        return this.__memory.running; 
+        return this.__memory.running || 0; 
+    }
+
+    /**
+     * Whether processes past the priority wall were run 
+     */
+    get hitWall() {
+        return this.__memory.hitWall; 
+    }
+
+    /**
+     * Maximum target CPU for the tick 
+     */
+    get cpuLimit() {
+        return this.__scheduler.cpuLimit; 
     }
 
     /**
@@ -113,13 +147,13 @@ class Kernel {
             return sum.toFixed(2); 
         }
 
-        out += ' pid  | name                 | status | cur cpu | avg cpu | max cpu | description                      \n'; 
-        out += '------+----------------------+--------+---------+---------+---------+----------------------------------\n'; 
+        out += ' pid  | name                 | pri | status | ppid | cur cpu | avg cpu | max cpu | description                      \n'; 
+        out += '------+----------------------+-----+--------+------+---------+---------+---------+----------------------------------\n'; 
 
         const pids = _.keys(this.__memory.processes); 
 
         pids.sort((a, b) => 
-            this.__memory.processes[b].cur - this.__memory.processes[a].cur
+            this.__memory.processes[b].cpu - this.__memory.processes[a].cpu
         ); 
 
         for (let pid of pids) {
@@ -129,11 +163,15 @@ class Kernel {
             out += ' | '; 
             out += pad(mem.path.replace(/process_/g, ''), 20); 
             out += ' | '; 
-            out += pad(STATUS_NAME[mem.stat || STATUS_ACTIVE], 6); 
+            out += padStart(mem.pri, 3); 
             out += ' | '; 
-            out += padStart(mem.cur ? parseFloat(mem.cur).toFixed(2) : 0, 7); 
+            out += pad(STATUS_NAME[mem.stat || STATUS_NEXIST], 6); 
             out += ' | '; 
-            out += padStart(avgCpu(mem.cpu) || 0, 7); 
+            out += padStart(mem.ppid | 0, 4); 
+            out += ' | '; 
+            out += padStart(mem.cpu ? parseFloat(mem.cpu).toFixed(2) : 0, 7); 
+            out += ' | '; 
+            out += padStart(avgCpu(mem.hist) || 0, 7); 
             out += ' | '; 
             out += padStart((parseFloat(mem.max) || 0).toFixed(2), 7); 
             out += ' | '; 
@@ -145,13 +183,23 @@ class Kernel {
     }
 
     /**
-     * Determines PID status 
+     * Determines process status 
      * 
      * @param {number} pid 
-     * @return {number} Status code for PID 
+     * @returns {number} Status code for PID 
      */
     status(pid) {
         return this.__scheduler.getPidStatus(pid); 
+    }
+
+    /**
+     * Determines whether a process is alive or not 
+     * 
+     * @param {number} pid 
+     * @returns {boolean} Whether the process is alive 
+     */
+    alive(pid) {
+        return this.__scheduler.isPidAlive(pid); 
     }
 
     /**
@@ -160,9 +208,10 @@ class Kernel {
      * @param {string} path Path to the process code 
      * @param {Object} [args] Any arguments for the process 
      * @param {number} ppid Parent PID if the process is a child 
+     * @returns {number} The child PID or -1 if creation failed
      */
     start(path, args = null, ppid = 0) {
-        this.__scheduler.createProcess(path, args, ppid); 
+        return this.__scheduler.createProcess(path, args, ppid); 
     }
 
     /**
@@ -171,7 +220,7 @@ class Kernel {
      * @param {number} pid PID of the process to kill 
      */
     kill(pid) {
-        this.__scheduler.killProcess(pid); 
+        return this.__scheduler.killProcess(pid); 
     }
 
     /**
@@ -181,7 +230,7 @@ class Kernel {
      * @param {number} ticks Number of ticks to sleep for 
      */
     sleep(pid, ticks = 1) {
-        this.__scheduler.sleepProcess(pid, ticks); 
+        return this.__scheduler.sleepProcess(pid, ticks); 
     }
 
     /**
@@ -190,20 +239,21 @@ class Kernel {
      * Runs the kernel for one tick. 
      */
     __run() {
+        console.log('Time: ' + Game.time); 
         __setMemory(this); 
 
         if (this.processCount === 0) {
             this.start('../process/main'); 
         }
 
-        this.__scheduler.prerun(); 
+        this.__scheduler.preRun(); 
         this.__scheduler.scheduleCompletedProcesses(); 
         while (this.__scheduler.shouldContinue()) {
             this.__scheduler.runNextProcess(); 
         }
-        // TODO add any processes that are completed, but ran in a previous frame
+        this.__scheduler.shiftQueues(); 
 
-        this.__scheduler.cleanup(); 
+        this.__scheduler.postRun(); 
     }
 
     /**

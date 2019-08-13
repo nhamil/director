@@ -1,14 +1,21 @@
 'use strict' 
 
-function bucketCheck() {
-    if (Game.cpu.bucket < 500) {
-        const msg = 'Low bucket, waiting to replenish: ' + Game.cpu.bucket; 
+function bucketCheck(throwError) {
+    if (Game.cpu.bucket < 800) {
+        const msg = 'Low bucket, waiting to replenish: ' + Game.cpu.bucket + '/800'; 
         Game.notify(msg); 
-        throw new Error(msg); 
+        if (throwError) {
+            throw new Error(msg); 
+        }
+        else {
+            console.log(msg); 
+            return false; 
+        }
     }
+    return true; 
 }
 
-bucketCheck(); 
+bucketCheck(true); 
 
 require('./constants'); 
 
@@ -23,7 +30,7 @@ let lastUpdate = 0;
 let out = ''; 
 
 module.exports.loop = function () {
-    bucketCheck(); 
+    if (!bucketCheck(false)) return; 
     kernel.__run(); 
 
     const time = new Date().getTime(); 
@@ -36,7 +43,7 @@ module.exports.loop = function () {
         printData(out); 
     }
     
-    // Memory.cpu = Game.cpu.getUsed() * 1.15; 
+    Memory.cpu = Game.cpu.getUsed() * 1.15; 
 }
 
 function printScriptStats(pidTable) {
@@ -47,7 +54,13 @@ function printScriptStats(pidTable) {
     const bucket = Game.cpu.bucket / 10000; 
 
     out = ''; 
-    out += 'Last Reload: ' + (Game.time - Memory.lastReload) + ' tick(s)\n\n'; 
+    out += 'Game Time   : ' + Game.time + '\n'; 
+    out += 'Last Reload : ' + (Game.time - Memory.lastReload) + ' tick(s)\n' 
+    out += 'Processes   : ' + kernel.processCount + '\n'; 
+    out += 'Run Count   : ' + kernel.runCount + '\n'; 
+    out += 'Hit Wall    : ' + kernel.hitWall + '\n'; 
+    out += 'CPU Limit   : ' + kernel.cpuLimit + '\n'; 
+    out += '\n'; 
     out += 'CPU : ['; 
     for (let i = 0; i < length; i++) {
         out += i < cpu * length ? '|' : '.'; 
@@ -66,6 +79,14 @@ function printScriptStats(pidTable) {
 
     out += '\n'; 
     out += pidTable; 
+
+    // temp 
+    out += '\nRemaining Queues\n'; 
+    for (let p = PRIORITY_HIGHEST; p <= PRIORITY_LOWEST; p++) {
+        out += p.toString().padStart(2, ' ') + ' : [';
+        out += kernel.__memory.queues[p]; 
+        out += ']\n'; 
+    }
 
     printData(out); 
 }

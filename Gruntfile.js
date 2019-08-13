@@ -14,13 +14,6 @@ module.exports = function(grunt) {
             let requirePath = /['"`](\.?\.\/.*)['"`]/.exec(found)[1]; 
             return "'" + path.normalize(prefix + requirePath).replace(/[\\/]/g, '_') + "'"; 
         }); 
-        // }).replace(/require\s*\(\s*['"](.*)['"]\s*\)/g, (found) => {
-        //     let requirePath = /['"](.*)['"]/.exec(found)[1]; 
-        //     return "require('" + path.normalize(prefix + requirePath).replace(/[\\/]/g, '_') + "')"; 
-        // }).replace(/start\s*\(\s*['"](.*)['"]\s*\)/g, (found) => {
-        //     let requirePath = /['"](.*)['"]/.exec(found)[1]; 
-        //     return "start('" + path.normalize(prefix + requirePath).replace(/[\\/]/g, '_') + "')"; 
-        // });
     }
 
     let uploadConfig = {}; 

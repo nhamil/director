@@ -1,50 +1,57 @@
 'use strict' 
 
+/**
+ * @typedef {import('./kernel').ProcessData} ProcessData 
+ */
 class Process {
 
     /**
      * @param {number} pid 
-     * @param {Object} mem 
+     * @param {ProcessData} pd 
      */
-    constructor(pid, mem) {
+    constructor(pid, pd) {
         this._pid = pid; 
-        this._mem = mem; 
+        this._pd = pd; 
+        /**
+         * Use this for any caching 
+         */
+        this.cache = {}; 
     }
 
     /**
-     * The process ID 
+     * @returns {number} The process ID 
      */
     get pid() {
         return this._pid; 
     }
 
     /**
-     * The process name 
+     * @returns {string} The process name 
      */
     get name() {
         return this.constructor.name; 
     }
 
     /**
-     * The process memory 
-     * 
      * The data here must be stringifiable 
+     * 
+     * @returns The process memory
      */
     get data() {
-        return this._mem.data; 
+        return this._pd.data; 
     }
 
     /**
-     * @param {Object} data The new data to be stored 
+     * @param data The new data to be stored 
      */
     set data(data) {
-        return this._mem.data = data; 
+        return this._pd.data = data; 
     }
 
     /**
      * If a process has a description, it can override this getter to return it 
      * 
-     * The process description 
+     * @returns {string} The process description 
      */
     get description() {
         return null; 
@@ -81,12 +88,62 @@ class Process {
      */
     run() {}
 
-    startProcess(path, args) {
-        kernel.start(path, args); 
+    /**
+     * Starts an independent process. 
+     * If the id is already assigned a process and the process is 
+     * still alive, the method does nothing 
+     * 
+     * @param {string} id Process identifier, this is not used by the resulting process. If this is null the process is not remembered  
+     * @param {string} path Path to the process class
+     * @param {object} args Process arguments 
+     * @returns {boolean} Whether the process is created 
+     */
+    startProcess(id, path, args) {
+        if (id) {
+            if (!this.data._p) {
+                this.data._p = {}; 
+            }
+            if (!this.data._p[id] || !kernel.alive(this.data._p[id])) {
+                let pid = kernel.start(path, args);  
+                if (pid > 0) {
+                    this.data._p[id] = pid; 
+                    return true; 
+                }
+            }
+            return false; 
+        }
+        else {
+            return kernel.start(path, args) > 0; 
+        }
     }
 
-    startChildProcess(path, args) {
-        kernel.start(path, args, this.pid); 
+    /**
+     * Starts a child process. 
+     * If the id is already assigned a process and the process is 
+     * still alive, the method does nothing 
+     * 
+     * @param {string} id Process identifier, this is not used by the resulting process. If this is null the process is not remembered  
+     * @param {string} path Path to the process class
+     * @param {object} args Process arguments 
+     * @returns {boolean} Whether the process is created 
+     */
+    startChildProcess(id, path, args) {
+        if (id) {
+            if (!this.data._p) {
+                this.data._p = {}; 
+            }
+            if (!this.data._p[id] || !kernel.alive(this.data._p[id])) {
+                let pid = kernel.start(path, args, this.pid);  
+                if (pid > 0) {
+                    this.data._p[id] = pid; 
+                    return true; 
+                }
+            }
+            return false; 
+        }
+        else {
+            return kernel.start(path, args, this.pid) > 0; 
+        }
     }
 
     /**

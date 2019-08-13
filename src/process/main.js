@@ -1,5 +1,9 @@
 'use strict' 
 
+/** 
+ * @typedef Data
+ * @property {number} test 
+ */
 class Main extends kernel.Process {
 
     get description() {
@@ -11,26 +15,30 @@ class Main extends kernel.Process {
     }
 
     create(args) {
-        for (let i = 0; i < 10; i++) {
-            // this.startProcess('./test'); 
-        }
+        /** 
+         * @type {Data} 
+        */
+        this.data = {}; 
     }
 
     reload() {
         this.data.value = 0; 
     }
 
-    run() {
-        // console.log('main run'); 
-        // if (Math.random() < 0.5) {
-            this.startProcess('./test'); 
-        // }
+    *run() {
+        yield this.handleRooms(); 
+    }
 
-        for (let i = 0; i < 100000; i++) {
-            this.data.value++; 
+    handleRooms() {
+        for (let name in Game.rooms) {
+            let room = Game.rooms[name]; 
+
+            if (room.controller && room.controller.my) {
+                this.startChildProcess(`room_${name}`, './room', {
+                    room: name 
+                });
+            }
         }
-
-        // this.exit(); 
     }
 
 }
