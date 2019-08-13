@@ -56,7 +56,6 @@ class Scheduler {
         }
 
         try {
-            const type = require(path); 
             const pd = this.createProcessData(path); 
 
             const proc = this._instantiateProcess(pid, pd); 
@@ -237,7 +236,6 @@ class Scheduler {
         const startCpu = Game.cpu.getUsed(); 
         const pid = this.getNextPidInQueue(); 
         if (!this.isPidAlive(pid)) return; 
-        // this.memory.completed.push(pid); 
 
         let status = this.getPidStatus(pid); 
         const pd = this.memory.processes[pid]; 
@@ -246,18 +244,15 @@ class Scheduler {
 
         let toQueue = false; 
 
-        // console.log('Running ' + pid); 
-
         function runFunction() {
             proc.run(); 
         }
 
         function runCoroutine() {
-            // console.log('Running coroutine'); 
             /** @type {GeneratorFunction} */
             let coroutine = proc.__coroutine; 
             if (!coroutine) {
-                // console.log('Coroutine does not exist, starting one'); 
+                // coroutine does not exist, start one
                 coroutine = proc.__coroutine = proc.run(); 
             }
             let output;
@@ -268,14 +263,13 @@ class Scheduler {
                 console.log('Error running coroutine process ' + pid + ' (' + path + '): ' + e); 
                 proc.__coroutine = null; 
             }
-            // console.log('Output: ' + JSON.stringify(output)); 
             if (output) {
                 if (output.done) {
-                    // console.log('Finished coroutine'); 
+                    // coroutine is finished 
                     proc.__coroutine = null; 
                 }
                 else {
-                    // console.log('Re-queueing process'); 
+                    // requeue to run this tick
                     toQueue = true; 
                 }
             }
@@ -287,7 +281,6 @@ class Scheduler {
         }
         this.memory.running = pid; 
 
-        // console.log('PID ' + pid + ': ' + STATUS_NAME[status]); 
         try {
             if (status === STATUS_SLEEP) {
                 if (!pd.sleep || pd.sleep < Game.time) {
@@ -314,7 +307,6 @@ class Scheduler {
 
         if (toQueue) {
             let priority = pd.pri == undefined ? PRIORITY_DEFAULT : pd.pri; 
-            // this.memory.queues[priority].push(pid); 
             this.memory.frame.push(pid); 
         }
         else {
@@ -332,7 +324,6 @@ class Scheduler {
         // this.memory.frame = _.shuffle(_.uniq(this.memory.frame)); 
         if (this._lastTime != Game.time) {
             this._lastTime = Game.time; 
-            // console.log('queueing frame tasks: ' + this.memory.frame); 
         }
         for (let pid of this.memory.frame) {
             let pd = this.memory.processes[pid]; 
@@ -344,7 +335,6 @@ class Scheduler {
     }
 
     shouldContinue() {
-        // console.log('next pid: ' + this.getNextPidInQueue(true) + ", alive: " + this.isPidAlive(this.getNextPidInQueue(true))); 
         if (!this.isPidAlive(this.getNextPidInQueue(true))) {
             this._queueFrameTasks(); 
             if (!this.isPidAlive(this.getNextPidInQueue(true))) return false; 
@@ -355,7 +345,6 @@ class Scheduler {
         }
         else {
             if (Game.cpu.getUsed() >= (this.cpuLimit || 10) - 1) {
-                // console.log('Reached CPU Limit'); 
                 return false; 
             }
             return true; 

@@ -14,17 +14,6 @@ class Main extends kernel.Process {
         return PRIORITY_HIGHEST; 
     }
 
-    create(args) {
-        /** 
-         * @type {Data} 
-        */
-        this.data = {}; 
-    }
-
-    reload() {
-        this.data.value = 0; 
-    }
-
     *run() {
         yield this.handleRooms(); 
     }

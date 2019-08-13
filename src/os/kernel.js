@@ -35,10 +35,6 @@ const Scheduler = require('./scheduler');
 class Kernel {
 
     constructor() {
-        // console.log('--------------------------------------------------'); 
-        // console.log('TODO Kernel.init'); 
-        // console.log('=============================================\n\n\n'); 
-
         if (!Memory.os) {
             Memory.os = {
                 processes: {}, 

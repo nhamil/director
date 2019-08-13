@@ -1,0 +1,16 @@
+{
+    "sim": {
+        "dest": "<simulation folder>"
+    }, 
+    "localhost": {
+        "dest": "<local private server folder>"
+    }, 
+    "private": {
+        "host": "<host>", 
+        "port": 21025, 
+        "http": true, 
+        "email": "<email>", 
+        "password": "<password>", 
+        "branch": "default" 
+    }
+}
