@@ -9,6 +9,14 @@ Memory.spawns = Memory.spawns || {};
 Memory.expandFlags = Memory.expandFlags || {};
 Memory.needsSpawn = Memory.needsSpawn || {}; 
 
+util.manhattanDistance = function(x1, y1, x2, y2) {
+    return Math.abs(x1 - x2) + Math.abs(y1 - y2); 
+}
+
+util.randomColor = function() {
+    return '#'+Math.floor(Math.random()*0x1000000).toString(16);
+}
+
 /**
  * @param {Array} build
  */

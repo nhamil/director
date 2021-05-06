@@ -1,0 +1,158 @@
+#!/usr/bin/env python 
+
+import argparse
+import base64 
+import http.client 
+import json 
+import os 
+import pathlib 
+import re 
+import shutil
+import sys 
+import time
+
+def submit_data(host, port, user, passwd, data): 
+    code = -1 
+    
+    try: 
+        auth = base64.b64encode("{}:{}".format(user, passwd).encode('utf8')).decode('utf8')
+        auth = 'Basic {}'.format(auth)
+
+        encoded_data = json.dumps(data).encode('utf8') 
+
+        conn = http.client.HTTPConnection("{}:{}".format(host, port), timeout=3) 
+        conn.request("POST", "/api/user/code", headers={
+            "Authorization": auth,
+            "Content-Type": "application/json; charset=utf-8", 
+            "Content-Length": len(encoded_data)
+        }, body=encoded_data)
+        res = conn.getresponse() 
+        code = res.getcode() 
+        
+        conn.close() 
+    except: 
+        pass 
+
+    return code == 200
+
+def filter_file_name(name, src): 
+    name = name.replace(src+"/", "", 1)
+    name = name.replace("/", ".") 
+    name = name.replace(src+"\\", "", 1)
+    name = name.replace("\\", ".") 
+    if name.endswith(".js"): 
+        name = name[:-3] 
+    return name 
+
+parser = argparse.ArgumentParser(description="Submit code to a Screeps server.") 
+parser.add_argument('-b', '--branch', default=None, type=str, help="Branch to submit code to. Defaults to config file's branch or `default`.")
+parser.add_argument('-s', '--source', default='src', type=str, help="Source code location. Defaults to `src`.")
+parser.add_argument('server', type=str, help="Server to submit code to.")
+
+args = parser.parse_args() 
+
+try: 
+    with open("config.json") as f: 
+        config = json.load(f) 
+except: 
+    print("Could not read config.json, exitting.") 
+    sys.exit()
+
+server = args.server
+source = os.path.normpath(args.source) 
+branch = args.branch 
+
+submit_type = config[server]['type']
+
+username = None 
+password = None 
+loc = None 
+port = None 
+folder = None 
+
+loc = config[server]['location'] 
+if branch == None: 
+    branch = config[server].get('branch', 'default') 
+
+if submit_type == 'http': 
+    username = config[server]['username'] 
+    password = config[server]['password'] 
+    port = config[server].get('port', 21025) 
+
+    print("Submitting {}'s code to http://{}:{} on branch '{}'".format(
+        username, 
+        loc, 
+        port, 
+        branch
+    ))
+elif submit_type == 'folder': 
+    loc = os.path.normpath(loc) 
+    print("Submitting code to {} on branch '{}'".format(
+        loc, 
+        branch
+    ))
+else: 
+    print("Unknown submission type: '{}'. Accepted values are 'http', 'folder'.".format(submit_type)) 
+    sys.exit() 
+
+files = pathlib.Path(source).rglob('*.js')
+
+data = {
+    "branch": branch, 
+    "modules": {}
+}
+
+try: 
+    regex = re.compile(r"require\s*\(\s*['\"](.*?)['\"]\s*\)") 
+
+    def create_repl(folder): 
+        def repl(match): 
+            file = re.sub(regex, r"\1", match.group(0))
+            return "require(\"" + filter_file_name(os.path.normpath("{}/{}".format(folder, file)), source) + "\")"
+        return repl
+
+    print("Processing files...") 
+
+    for f in files: 
+        file = str(f) 
+        with open(file) as f: 
+            lines = f.readlines() 
+        lines = ''.join(lines) 
+        repl = create_repl(os.path.dirname(file)) 
+        lines = re.sub(regex, repl, lines)
+        data['modules'][filter_file_name(file, source)] = lines 
+except Exception as e: 
+    print("Failed to process files! {}".format(e)) 
+    sys.exit() 
+
+success = False 
+err = None 
+
+if submit_type == 'http': 
+    print("Uploading code...") 
+
+    if submit_data(loc, port, username, password, data): 
+        success = True 
+
+elif submit_type == 'folder': 
+    print("Copying files...") 
+
+    try: 
+        path = "{}/{}".format(loc, branch)
+        if os.path.exists(path): 
+            shutil.rmtree(path)
+        os.makedirs(path, exist_ok=True) 
+    
+        for file in data['modules']: 
+            content = data['modules'][file] 
+            with open("{}/{}.js".format(path, file), 'w') as f: 
+                f.write(content) 
+
+        success = True 
+    except Exception as e: 
+        err = e 
+
+if success: 
+    print("Code successully submitted!") 
+else: 
+    print("Code submission failed: {}".format(err)) 

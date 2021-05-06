@@ -28,59 +28,41 @@ const spawnQueue = require('../spawnqueue');
 
 const processTypes = require('./paths'); 
 
-function reset(removeMem = false) {
-    if (removeMem) delete Memory.os; 
+class Kernel {
 
-    let welcome = String.raw` _____ _____ _____  ______ _____ _______ ____  _____  
+    constructor() {
+        this.__reset(false); 
+    }
+
+    __reset(all = true) {
+        if (all) {
+            console.log("Killing processes..."); 
+            delete Memory.os; 
+        }
+
+        console.log("Restarting..."); 
+        this._updateMemory(); 
+
+        let welcome = String.raw` _____ _____ _____  ______ _____ _______ ____  _____  
 |  __ \_   _|  __ \|  ____/ ____|__   __/ __ \|  __ \ (R)
 | |  | || | | |__) | |__ | |       | | | |  | | |__) |
 | |  | || | |  _  /|  __|| |       | | | |  | |  _  / 
 | |__| || |_| | \ \| |___| |____   | | | |__| | | \ \ 
 |_____/_____|_|  \_\______\_____|  |_|  \____/|_|  \_\ ` + '\n\n';
-    console.log("Initializing..."); 
-    console.log(welcome); 
+        console.log("Initializing..."); 
+        console.log(welcome); 
 
-    /** 
-     * @typedef {import('./kernel')} Kernel
-     * @type {Kernel} 
-     */
-    let kernel = new Kernel(); 
-    global.kernel = kernel; 
-    
-    kernel._updateMemory(); 
+        this._cache = {
+            procs: {}, 
+            procsByName: {}
+        }; 
+        this._regenerateProcesses(); 
 
-    /**
-     * @type {KernelCache} 
-     */
-    kernel._cache = {
-        procs: {}, 
-        procsByName: {}
-    }; 
-    kernel._regenerateProcesses(); 
+        console.log("Initialization complete."); 
+        console.log("Director is online."); 
+        console.log(); 
 
-    console.log("Initialization complete!"); 
-    console.log(); 
-
-    return true; 
-}
-
-class Kernel {
-
-    constructor() {
-        this._updateMemory(); 
-
-        // /**
-        //  * @type {KernelCache} 
-        //  */
-        // this._cache = {
-        //     procs: {}, 
-        //     procsByName: {}
-        // }; 
-        // this._regenerateProcesses(); 
-    }
-
-    __reset() {
-        return reset(true); 
+        return true; 
     }
 
     _regenerateProcesses() {
@@ -641,6 +623,6 @@ class Kernel {
 
 }
 
-Kernel.reset = reset; 
-
-module.exports = Kernel; 
+/** @type {Kernel} */
+module.exports = new Kernel(); 
+global.kernel = module.exports; 

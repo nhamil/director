@@ -13,6 +13,8 @@ class InitProcess extends Process {
     reload() {}
 
     run() {
+        this.startChildIfNotExist('roomeval', 'roomeval'); 
+
         for (let creep in Memory.creeps) {
             let c = Game.creeps[creep]; 
             if (!c) {
@@ -20,7 +22,7 @@ class InitProcess extends Process {
             } 
             else if (util.doesCreepHaveTask(c)) {
                 let task = util.getCreepTask(c); 
-                let pidName = `${creep}.${task.id}`; 
+                let pidName = `${creep}.task.${task.id}`; 
                 if (kernel.getPidByName(pidName) === PID_NONE) {
                     this.startChild(`task.${task.id}`, pidName, {
                         creep: c.name 

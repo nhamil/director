@@ -8,11 +8,7 @@ module.exports = {
         let body = []; 
 
         let segmentCost = BODYPART_COST[WORK] + BODYPART_COST[CARRY] + BODYPART_COST[MOVE]; 
-        let segments = 1; 
-
-        while ((segments + 1) * segmentCost <= energy) {
-            segments++; 
-        }
+        let segments = Math.max(1, Math.ceil(energy / segmentCost)); 
 
         for (let i = 0; i < segments; i++) {
             body.push(CARRY); 
