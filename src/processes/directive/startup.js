@@ -13,14 +13,15 @@ class StartupDirectiveProcess extends DirectiveProcess {
             return this.kill(); 
         }
 
-        // we can always use more early workers 
-        spawnQueue.request(room, 'general', true, spawnQueue.MEDIUM_PRIORITY); 
-
         let creeps = util.getCreepsByHomeroomAndRoleWithoutTask(room, 'general'); 
         for (let creep of creeps) {
             util.giveCreepTask(creep, 'upgrade', {
                 room: room.name 
             }); 
+        }
+
+        if (util.getCreepsByHomeroomAndRole(room, 'general').length < 10) {
+            spawnQueue.request(room, 'general', true, spawnQueue.MEDIUM_PRIORITY); 
         }
     }
 

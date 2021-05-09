@@ -6,26 +6,49 @@ class BuildTaskProcess extends TaskProcess {
 
     runTask() {
         let creep = this.creep; 
-        let room = Game.rooms[this.taskData.room]; 
+        let data = this.taskData; 
+        let room = Game.rooms[data.room]; 
 
         // make sure creep and build target are still valid 
-        if (!creep || !this.taskData.target) {
+        if (!creep || !data.target) {
             this.log('task not possible anymore'); 
             return this.finishTask(); 
         }
-        
-        if (creep.store.energy === 0) {
-            // only build once, wait for new assignment
-            if (this.taskData.remove) {
-                return this.finishTask(); 
+
+        if (!data.action) data.action = 'withdraw'; 
+
+        if (data.action === 'withdraw') {
+            if (this.withdraw()) {
+                data.action = 'build'; 
             }
-            // get energy in whatever way possible 
-            return this.startAction('withdraw'); 
         }
-        else {
-            this.taskData.remove = true; 
-            // move to target and build 
-            return this.startAction('build'); 
+
+        if (data.action === 'build') {
+            this.build(); 
+        }
+    }
+
+    /**
+     * @param {Creep} creep 
+     * @param {Object} data 
+     */
+    build(creep, data) {
+        /** @type {ConstructionSite} */
+        let target = Game.getObjectById(taskData.target); 
+        
+        if (creep.store.getCapacity(RESOURCE_ENERGY) === 0) {
+            return this.finishTask(); 
+        }
+
+        if (!target) {
+            this.log("Construction site no longer exists"); 
+            return this.finishTask(); 
+        }
+
+        if (this.move(pos, 3)) {
+            if (creep.build(target) !== OK) {
+                return this.finishTask(); 
+            } 
         }
     }
 

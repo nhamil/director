@@ -13,7 +13,25 @@ class MineTaskProcess extends TaskProcess {
             return this.finishTask(); 
         }
         
-        return this.startAction('mine'); 
+        this.mine(creep, source); 
+    }
+
+    /**
+     * @param {Creep} creep 
+     * @param {Source} source 
+     */
+    mine(creep, source) {
+        let room = source.room; 
+        let pos = util.getRoomPositionReadData(this.taskData.pos); 
+
+        let range = 0; 
+        if (source.pos.getRangeTo(pos) === 0) {
+            range = 1; 
+        }
+
+        if (this.move(pos, range)) {
+            creep.harvest(source); 
+        }
     }
 
 }

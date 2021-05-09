@@ -37,19 +37,32 @@ util.getBodyCost = function(build)
 //     return c => c.memory.role === role; 
 // }
 
+/**
+ * @param {Creep} creep 
+ * @returns {string} Role name
+ */
+util.getCreepRole = function(creep) {
+    return creep.memory.role; 
+}
+
 util.randomName = function(base) 
 {
     return base + (Math.floor(Math.random() * 100000) + '').padStart(5, '0'); 
 }
 
-util.getIndexOfClosestCreep = function(creeps, target) 
+/**
+ * @param {RoomObject} target 
+ * @param {RoomObject[]} objects 
+ * @returns {number}
+ */
+util.findIndexOfClosestObject = function(target, objects) 
 {
     let best = Infinity; 
     let index = -1; 
 
-    for (let i = 0; i < creeps.length; i++) 
+    for (let i = 0; i < objects.length; i++) 
     {
-        let dist = creeps[i].pos.getRangeTo(target); 
+        let dist = objects[i].pos.getRangeTo(target); 
         if (dist < best) 
         {
             index = i; 

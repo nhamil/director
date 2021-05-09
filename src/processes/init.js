@@ -13,7 +13,7 @@ class InitProcess extends Process {
     reload() {}
 
     run() {
-        this.startChildIfNotExist('roomeval', 'roomeval'); 
+        // this.startChildIfNotExist('roomeval', 'roomeval'); 
 
         for (let creep in Memory.creeps) {
             let c = Game.creeps[creep]; 
