@@ -49,8 +49,8 @@ class Kernel {
 | |  | || | |  _  /|  __|| |       | | | |  | |  _  / 
 | |__| || |_| | \ \| |___| |____   | | | |__| | | \ \ 
 |_____/_____|_|  \_\______\_____|  |_|  \____/|_|  \_\ ` + '\n\n';
-        console.log("Initializing..."); 
-        console.log(welcome); 
+        if (!util.simulation) console.log("Initializing..."); 
+        if (!util.simulation) console.log(welcome); 
 
         this._cache = {
             procs: {}, 
@@ -58,15 +58,15 @@ class Kernel {
         }; 
         this._regenerateProcesses(); 
 
-        console.log("Initialization complete."); 
-        console.log("Director is online."); 
-        console.log(); 
+        if (!util.simulation) console.log("Initialization complete."); 
+        if (!util.simulation) console.log("Director is online."); 
+        if (!util.simulation) console.log(); 
 
         return true; 
     }
 
     _regenerateProcesses() {
-        console.log(`Regenerating...`);
+        if (!util.simulation) console.log(`Regenerating...`);
         let toKill = [] 
 
         for (let pid in this._memory.procs) {
@@ -154,11 +154,11 @@ class Kernel {
 
         let memKb = RawMemory.get().length * 1 / 1024; 
         let mem = memKb / 2048; 
-        let cpu = Game.cpu.getUsed() * 1.0 / Game.cpu.limit; 
-        let bucket = Game.cpu.bucket / 10000; 
+        let cpu = util.getTime() * 1.0 / util.cpuLimit; 
+        let bucket = util.bucket / 10000; 
 
-        // out += "CPU       : " + Game.cpu.getUsed().toFixed(2) + " / " + Game.cpu.limit.toFixed(2) + " \n"; 
-        // out += "Bucket    : " + Game.cpu.bucket.toFixed(2) + " / " + (10000).toFixed(2) + " \n"; 
+        // out += "CPU       : " + util.getTime().toFixed(2) + " / " + util.cpuLimit.toFixed(2) + " \n"; 
+        // out += "Bucket    : " + util.bucket.toFixed(2) + " / " + (10000).toFixed(2) + " \n"; 
         // out += "Processes : " + _.size(pids) + " \n"; 
 
         let length = 50;
@@ -177,7 +177,7 @@ class Kernel {
         for (let i = 0; i < length; i++) {
             out += i < bucket * length ? '|' : '.'; 
         }
-        out += '] ' + Game.cpu.bucket + ' ms\n'; 
+        out += '] ' + util.bucket + ' ms\n'; 
 
         out += '\n'; 
 
@@ -509,10 +509,10 @@ class Kernel {
         let proc = this._cache.procs[pid]; 
         let procData = this._memory.procs[pid]; 
 
-        let startTime = Game.cpu.getUsed(); 
+        let startTime = util.getTime(); 
 
         function timeUsed() {
-            return Math.floor((Game.cpu.getUsed() - startTime) * 1000); 
+            return Math.floor((util.getTime() - startTime) * 1000); 
         }
 
         if (!this.alive(pid)) return false; 
@@ -561,7 +561,7 @@ class Kernel {
     }
 
     shouldContinue() {
-        return Game.cpu.getUsed() < Game.cpu.limit; 
+        return util.getTime() < util.cpuLimit; 
     }
 
     /**

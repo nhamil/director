@@ -390,7 +390,7 @@
          //let room=Game.rooms[roomname];
          //if (!room)
          //    return 'O noes, no room';
-         let cpu=Game.cpu.getUsed();
+         let cpu=util.getTime();
          // Rectangle Array, the Rectangles will be protected by the returned tiles
          let rect_array=[];
          rect_array.push({x1: 20, y1: 6, x2:28, y2: 27});
@@ -401,7 +401,7 @@
          let positions=util_mincut.GetCutTiles(roomname,rect_array,bounds); // Positions is an array where to build walls/ramparts
          // Test output
          console.log('Positions returned',positions.length);
-         cpu=Game.cpu.getUsed()-cpu;
+         cpu=util.getTime()-cpu;
          console.log('Needed',cpu,' cpu time');
          return 'Finished';
      },

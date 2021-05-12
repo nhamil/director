@@ -7,6 +7,7 @@
  * @property {boolean} needNow 
  * @property {number} priority
  * @property {boolean} taken 
+ * @property {Object} data 
  */ 
 
 /** @type {SpawnRequest[]} */
@@ -21,6 +22,10 @@ module.exports = {
     MEDIUM_PRIORITY: 300, 
     LOW_PRIORITY: 400, 
 
+    PRIORITY_MINER: 190, 
+    PRIORITY_HAULER: 195, 
+    PRIORITY_WORKER: 295, 
+
     clear: function() {
         spawnQueue.length = 0; 
     }, 
@@ -31,13 +36,14 @@ module.exports = {
      * @param {boolean} needNow Should the room not wait for optimal spawning
      * @param {number} priority Spawn priority 
      */
-    request: function(room, role, needNow = false, priority = 300) {
+    request: function(room, role, needNow = false, priority = 300, data = null) {
         spawnQueue.push({
             room: room.name, 
             role: role, 
             needNow: needNow, 
             priority: priority, 
-            taken: false 
+            taken: false, 
+            data: data || {}  
         }); 
         needsSorting = true; 
     }, 

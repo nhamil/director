@@ -9,7 +9,7 @@ const role = module.exports;
 function createBasicBodyRole(initial, base, add = null, addCap = Infinity) {
     return {
         initial: initial, 
-        getBuild: function(energy) {
+        build: function(energy) {
             let body = [...base]; 
     
             if (add) {
@@ -17,13 +17,17 @@ function createBasicBodyRole(initial, base, add = null, addCap = Infinity) {
                 let addCost = util.getBodyCost(add); 
     
                 let remainingEnergy = energy - bodyCost; 
-                let addAmt = Math.min(
+                let addAmt = Math.floor(Math.min(
                     addCap, 
-                    Math.ceil(
+                    Math.max(
                         0, 
                         remainingEnergy / addCost
                     ) 
-                ); 
+                )); 
+
+                while (body.length + addAmt * add.length > 50) addAmt--; 
+
+                // console.log("building " + initial + " with " + energy + " (" + remainingEnergy + ") energy with " + addCost + " add cost: " + addAmt); 
     
                 for (let i = 0; i < addAmt; i++) {
                     body = body.concat(add); 
@@ -49,11 +53,20 @@ const roles = {
     builder: createBasicBodyRole(
         'B', 
         [WORK, CARRY, MOVE], 
-        [WORK, CARRY, MOVE]
+        [WORK, CARRY, MOVE], 
+        3
+    ), 
+    repairer: createBasicBodyRole(
+        'R', 
+        [WORK, CARRY, MOVE], 
+        [WORK, CARRY, MOVE], 
+        3
     ), 
     general: createBasicBodyRole(
         'G', 
-        [WORK, CARRY, MOVE]
+        [WORK, CARRY, MOVE], 
+        [WORK, CARRY, MOVE], 
+        3
     ), 
     miner: createBasicBodyRole(
         'M', 
@@ -64,11 +77,12 @@ const roles = {
     hauler: createBasicBodyRole(
         'H', 
         [CARRY, CARRY, MOVE], 
-        [CARRY, CARRY, MOVE]
+        [CARRY, CARRY, MOVE], 
+        4
     )
 }; 
 
-role.getRole = function(role) {
+role.get = function(role) {
     return roles[role]; 
 } 
 
@@ -85,7 +99,7 @@ role.initial = function(role) {
 role.build = function(role, energy) {
     let r = roles[role]; 
     if (r) {
-        return r.getBuild(energy); 
+        return r.build(energy); 
     }
     else {
         return null; 

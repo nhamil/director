@@ -14,7 +14,7 @@ class HaulDirectiveProcess extends DirectiveProcess {
 
     run() {
         let room = this.room;
-        let creeps = util.getCreepsByHomeroomAndRole(room, ['hauler', 'repairer']); 
+        let creeps = util.getCreepsByHomeroomAndRole(room, ['hauler']); 
 
         // let idleWithoutEnergy = creeps.filter(i => !util.doesCreepHaveTask(i) && i.store.energy === 0); 
         let idleWithEnergy = creeps.filter(i => !util.doesCreepHaveTask(i) && i.store.energy === 0); 
@@ -24,17 +24,27 @@ class HaulDirectiveProcess extends DirectiveProcess {
         let targets = room.find(FIND_STRUCTURES, {
             filter: s => structurePriority[s.structureType] && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
         });
-        targets.sort((a, b) => structurePriority[a] - structurePriority[b]); 
+        targets.sort((a, b) => structurePriority[a.structureType] - structurePriority[b.structureType]); 
+
+        if (targets.length > 0) {
+            let pri = structurePriority[targets[0].structureType]; 
+            // if (Game.time % 50 === 0) this.log(pri + " " + targets[0]); 
+            targets = targets.filter(i => structurePriority[i.structureType] === pri); 
+        }
+        
 
         for (let creep of creeps) {
             if (creep.ticksToLive > 100 && util.getCreepRole(creep) == 'hauler') {
                 numTrueHaulers++; 
             }
 
-            if (creep.store.energy === 0) {
-                util.giveCreepTask(creep, 'withdraw'); 
-            }
-            else {
+            if (util.doesCreepHaveTask(creep)) continue; 
+
+            // if (creep.store.energy === 0) {
+            //     util.giveCreepTask(creep, 'withdraw'); 
+            // }
+            // else 
+            {
                 let targetIndex = util.findIndexOfClosestObject(creep, targets); 
 
                 if (targetIndex !== -1) {

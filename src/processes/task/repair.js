@@ -15,17 +15,17 @@ class BuildTaskProcess extends TaskProcess {
             return this.finishTask(); 
         }
 
-        if (!data.action) data.action = creep.store.energy > 0 ? 'build' : 'withdraw'; 
+        if (!data.action) data.action = creep.store.energy > 0 ? 'repair' : 'withdraw'; 
 
         if (data.action === 'withdraw') {
             if (this.withdraw()) {
-                data.action = 'build'; 
+                data.action = 'repair'; 
             }
         }
 
-        if (data.action === 'build') {
-            creep.say("build"); 
-            this.build(creep, data); 
+        if (data.action === 'repair') {
+            creep.say("repair"); 
+            this.repair(creep, data); 
         }
     }
 
@@ -33,21 +33,27 @@ class BuildTaskProcess extends TaskProcess {
      * @param {Creep} creep 
      * @param {Object} data 
      */
-    build(creep, data) {
-        /** @type {ConstructionSite} */
+    repair(creep, data) {
+        /** @type {Structure} */
         let target = Game.getObjectById(data.target); 
         
         if (creep.store.getCapacity(RESOURCE_ENERGY) === 0) {
             return this.finishTask(); 
         }
 
+        if (target.hits >= target.hitsMax) {
+            return this.finishTask(); 
+        }
+
+        // if (Game.time % 20 === 0) this.log("Repairing " + target.structureType + " at " + target.pos + " with " + target.hits + "/" + target.hitsMax + " hits"); 
+
         if (!target) {
-            this.log("Construction site no longer exists"); 
+            this.log("Repair site no longer exists"); 
             return this.finishTask(); 
         }
 
         if (this.move(target.pos, 3)) {
-            if (creep.build(target) !== OK) {
+            if (creep.repair(target) !== OK) {
                 return this.finishTask(); 
             } 
         }

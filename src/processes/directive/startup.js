@@ -5,6 +5,10 @@ const spawnQueue = require('../../spawnqueue');
 
 class StartupDirectiveProcess extends DirectiveProcess {
 
+    get priority() {
+        return PRIORITY_LOW; 
+    }
+
     run() {
         let room = Game.rooms[this.data.room]; 
 
@@ -13,15 +17,17 @@ class StartupDirectiveProcess extends DirectiveProcess {
             return this.kill(); 
         }
 
-        let creeps = util.getCreepsByHomeroomAndRoleWithoutTask(room, 'general'); 
+        let creeps = util.getCreepsByHomeroomAndRoleWithoutTask(room, ['general', 'repairer', 'builder']); 
         for (let creep of creeps) {
             util.giveCreepTask(creep, 'upgrade', {
                 room: room.name 
             }); 
         }
 
-        if (util.getCreepsByHomeroomAndRole(room, 'general').length < 10) {
-            spawnQueue.request(room, 'general', true, spawnQueue.MEDIUM_PRIORITY); 
+        let limit = room.controller.level < 3 ? 10 : 1; 
+        let len = util.getCreepsByHomeroomAndRole(room, 'general').length; 
+        if (len < limit) {
+            spawnQueue.request(room, 'general', true, len < 1 ? spawnQueue.HIGH_PRIORITY : spawnQueue.MEDIUM_PRIORITY); 
         }
     }
 

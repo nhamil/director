@@ -4,7 +4,7 @@ const Process = require('../os/process');
 
 const colonyDirectives = {
     1: ['mine', 'haul', 'startup', 'spawn'], 
-    3: ['mine', 'haul', 'structure', 'startup', 'spawn'], 
+    2: ['mine', 'haul', 'structure', 'startup', 'spawn'], 
 };
 
 let allDirectives = {}; 

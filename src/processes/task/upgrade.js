@@ -16,7 +16,7 @@ class UpgradeTaskProcess extends TaskProcess {
         }
 
         if (!data.action) {
-            data.action = 'withdraw';
+            data.action = creep.store.energy > 0 ? 'upgrade' : 'withdraw'; 
         }
         
         if (data.action === 'withdraw') {
@@ -26,6 +26,7 @@ class UpgradeTaskProcess extends TaskProcess {
         }
         
         if (data.action === 'upgrade') {
+            creep.say("upgrade"); 
             this.upgrade(creep, room.controller); 
         }
     }

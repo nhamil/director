@@ -8,6 +8,47 @@ Memory.flags = Memory.flags || {};
 Memory.spawns = Memory.spawns || {}; 
 Memory.expandFlags = Memory.expandFlags || {};
 Memory.needsSpawn = Memory.needsSpawn || {}; 
+ 
+if (!Creep.prototype._say) Creep.prototype._say = Creep.prototype.say; 
+
+Creep.prototype.say = function(msg, toPublic) {
+    return this._say(this.name[0] + ":" + msg, toPublic); 
+}
+
+let sim = _.keys(Game.rooms).some(i => i === 'sim'); 
+if (sim) {
+    console.log("Running in simulation mode"); 
+}
+
+Object.defineProperty(util, 'simulation', { get: () => sim }); 
+
+if (util.simulation) {
+    util._time = Game.time; 
+    util._cpuTime = 0; 
+    util.getTime = function() {
+        if (util._time !== Game.time) util._cpuTime = 0; 
+
+        util._cpuTime += 1.0; 
+        return util._cpuTime; 
+    } 
+    Object.defineProperty(util, 'cpuLimit', { get: () => 500 }); 
+    Object.defineProperty(util, 'bucket', { get: () => 10000 }); 
+}
+else {
+    util.getTime = () => Game.cpu.getUsed(); 
+    Object.defineProperty(util, 'cpuLimit', { get: () => Game.cpu.limit }); 
+    Object.defineProperty(util, 'bucket', { get: () => Game.cpu.bucket }); 
+}
+
+/**
+ * @param {Room} room 
+ * @returns {Source[]}
+ */
+util.findSafeSources = function(room) {
+    return room.find(FIND_SOURCES, {
+        filter: s => s.pos.findInRange(FIND_HOSTILE_STRUCTURES, 5).length === 0 // filter out source keepers 
+    }); 
+}
 
 util.manhattanDistance = function(x1, y1, x2, y2) {
     return Math.abs(x1 - x2) + Math.abs(y1 - y2); 

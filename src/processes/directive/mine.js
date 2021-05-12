@@ -8,7 +8,7 @@ class MineDirectiveProcess extends DirectiveProcess {
     run() {
         let room = this.room; 
         let creeps = util.getCreepsByHomeroomAndRole(room, 'miner'); 
-        let sources = room.find(FIND_SOURCES); 
+        let sources = util.findSafeSources(room); 
 
         let minedSources = {}; 
 

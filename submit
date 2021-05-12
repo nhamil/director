@@ -141,6 +141,7 @@ elif submit_type == 'folder':
         path = "{}/{}".format(loc, branch)
         if os.path.exists(path): 
             shutil.rmtree(path)
+            time.sleep(3.0); 
         os.makedirs(path, exist_ok=True) 
     
         for file in data['modules']: 

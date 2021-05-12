@@ -14,6 +14,7 @@ module.exports = {
     'task.build': require('../processes/task/build'), 
     'task.haul': require('../processes/task/haul'), 
     'task.mine': require('../processes/task/mine'), 
+    'task.repair': require('../processes/task/repair'), 
     'task.upgrade': require('../processes/task/upgrade'), 
     'task.withdraw': require('../processes/task/withdraw')
 }; 
