@@ -6,7 +6,7 @@ const spawnQueue = require('../../spawnqueue');
 class StartupDirectiveProcess extends DirectiveProcess {
 
     get priority() {
-        return PRIORITY_LOW; 
+        return PRIORITY_LOW + 1; 
     }
 
     run() {

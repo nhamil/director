@@ -6,7 +6,7 @@ const Queue = require('../../queue');
 
 const ROAD_COST = 2; 
 const OPEN_COST = 3; 
-const VERSION = 7; 
+const VERSION = 8; 
 
 const INDEX_TO_STRUCTURE = [
     STRUCTURE_ROAD, 
@@ -46,8 +46,60 @@ function getSiteImportance(type) {
 class StructureDirectiveProcess extends DirectiveProcess {
 
     run() {
+        this.handleSources(); 
         this.handleBuilding(); 
         this.handleRepairs(); 
+    }
+
+    handleSources() {
+        /**
+         * @param {Source} source 
+         */
+        function chooseSourceContainerLocation(source) {
+            let controller = source.room.controller; 
+
+            if (controller) {
+                let path = PathFinder.search(source.pos, controller.pos); 
+
+                if (path && path.path && path.path.length > 0) {
+                    return path.path[0]; 
+                }
+                else {
+                    console.log('Could not find path from source to controller in room ' + source.room.name + '. This shouldn\'t be possible'); 
+                }
+            }
+        }
+
+        let room = this.room; 
+        let sources = room.find(FIND_SOURCES); 
+
+        let mem = room.memory; 
+        mem.sourceContainers = mem.sourceContainers || {}; 
+
+        for (let i in sources) {
+            let source = sources[i]; 
+            let posData = mem.sourceContainers[source.id]; 
+            if (!posData) {
+                // no container or construction site, add one 
+                let pos = chooseSourceContainerLocation(source); 
+
+                if (pos) {
+                    // console.log('Create source container construction site at ' + posData); 
+                    pos.createConstructionSite(STRUCTURE_CONTAINER); 
+                    mem.sourceContainers[source.id] = util.getRoomPositionWriteData(pos, false); 
+                }
+            }
+            else {
+                let pos = util.getRoomPositionReadData(posData); 
+                if (pos.findInRange(FIND_STRUCTURES, 0, { filter: s => s.structureType === STRUCTURE_CONTAINER }).length === 0) {
+                    if (pos.findInRange(FIND_CONSTRUCTION_SITES, 0).length === 0) 
+                    {
+                        // console.log('Create source container construction site at ' + posData); 
+                        pos.createConstructionSite(STRUCTURE_CONTAINER); 
+                    }
+                }
+            }
+        }
     }
 
     handleRepairs() {
@@ -94,13 +146,12 @@ class StructureDirectiveProcess extends DirectiveProcess {
     handleBuilding() {
         let room = this.room; 
 
-        let creeps; 
-        if (this.worstRepair < 0.8) {
-            creeps = util.getCreepsByHomeroomAndRole(room, 'builder'); 
-        }
-        else {
-            creeps = util.getCreepsByHomeroomAndRole(room, ['builder', 'repairer']); 
-        }
+        let roles = ['builder']; 
+
+        if (room.controller.ticksToDowngrade > 3000) roles.push('general'); 
+        if (this.worstRepair > 0.8) roles.push('repairer'); 
+
+        let creeps = util.getCreepsByHomeroomAndRole(room, roles); 
         
         if (creeps.length < 2) {
             spawnQueue.request(room, 'builder', false, spawnQueue.HIGH_PRIORITY); 
@@ -154,10 +205,9 @@ class StructureDirectiveProcess extends DirectiveProcess {
         //     [STRUCTURE_TOWER]: currentStructures.reduce((n, s) => n + (s.structureType === STRUCTURE_TOWER), 0) < CONTROLLER_STRUCTURES[STRUCTURE_TOWER][rcl], 
         // }; 
 
-        let index = -1; 
-        let bestType = null; 
+        let sites = []; 
+        let positions = []; 
         let highestPriority = -Infinity; 
-        let x, y; 
 
         /** @type {string} */
         let site; 
@@ -170,23 +220,58 @@ class StructureDirectiveProcess extends DirectiveProcess {
             let type = INDEX_TO_STRUCTURE[args[2]]; 
             let pri = getSiteImportance(type); 
 
-            if (canBuild[type] && pri > highestPriority) {
+            if (canBuild[type] && pri >= highestPriority) {
                 let onTile = room.lookAt(args[0], args[1]); 
                 let possible = !onTile.some(elem => elem.type === 'structure' || elem.type === 'constructionSite'); 
 
                 if (possible) {
+                    if (pri > highestPriority) {
+                        sites = []; 
+                        positions = []; 
+                    }
                     highestPriority = pri; 
-                    index = i; 
-                    bestType = type; 
-                    x = args[0]; 
-                    y = args[1]; 
+                    let site = { type: type, index: i, pos: new RoomPosition(args[0], args[1], room.name)}; 
+                    sites.push(site); 
+                    positions.push(site.pos); 
                 }
             }
         }
 
-        if (index !== -1) {
-            if (Game.time % 50 === 0) this.log("Trying to create " + bestType); 
-            room.createConstructionSite(x, y, bestType); 
+        // this.log(positions); 
+
+        if (sites.length > 0) {
+            // if (Game.time % 50 === 0) this.log("Trying to create " + bestType); 
+
+            let sources = room.find(FIND_SOURCES); 
+
+            let bestPos = positions[0]; 
+            let bestDist = Infinity; 
+
+            for (let source of sources) {
+                let pos = source.pos.findClosestByPath(positions, { ignoreCreeps: true }); 
+                // this.log(source.pos + ": " + pos); 
+                if (pos) {
+                    let dist = source.pos.findPathTo(pos).length; 
+                    if (dist !== undefined && dist < bestDist) {
+                        bestPos = pos; 
+                        bestDist = dist; 
+                    }
+                }
+            }
+
+            let bestSite = _.min(sites, s => s.pos.getRangeTo(bestPos)); 
+            // this.log("Best pos: " + bestPos + " (" + bestDist + ")"); 
+            this.log("Best site: " + JSON.stringify(bestSite)); 
+            this.log("Construction site creation: " + room.createConstructionSite(bestSite.pos, bestSite.type)); 
+
+            // let bestSite = _.minBy(sites, function(site) {
+            //     let min = Infinity, dist; 
+            //     for (let source of sources) {
+            //         dist = source.pos.findClosestByPath()
+            //     }
+            // }); 
+
+            // room.createConstructionSite(x, y, bestType); 
         }
     }
 

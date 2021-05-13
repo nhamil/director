@@ -4,6 +4,10 @@ const Process = require('../../os/process');
 
 class TaskProcess extends Process {
 
+    get priority() {
+        return PRIORITY_HIGH; 
+    }
+
     /**
      * @returns {Creep} 
      */
@@ -179,8 +183,8 @@ class TaskProcess extends Process {
      * @param {Creep} creep 
      */
     _findGroundEnergy(creep, data, ignore) {
-        // let remaining = creep.store.getFreeCapacity() + 50; 
-        let remaining = 0; 
+        let remaining = creep.store.getFreeCapacity() + 50; 
+        // let remaining = 0; 
         let res = creep.pos.findClosestByPath(FIND_DROPPED_RESOURCES, {
             filter: s => s.resourceType === RESOURCE_ENERGY && s.amount > remaining && !ignore[s.id]
         })

@@ -12,7 +12,7 @@ Memory.needsSpawn = Memory.needsSpawn || {};
 if (!Creep.prototype._say) Creep.prototype._say = Creep.prototype.say; 
 
 Creep.prototype.say = function(msg, toPublic) {
-    return this._say(this.name[0] + ":" + msg, toPublic); 
+    // return this._say(this.name[0] + ":" + msg, toPublic); 
 }
 
 let sim = _.keys(Game.rooms).some(i => i === 'sim'); 

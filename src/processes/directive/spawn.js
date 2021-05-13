@@ -114,7 +114,7 @@ class SpawnRoomProcess extends DirectiveProcess {
     run() {
         let room = Game.rooms[this.data.room]; 
 
-        if (Game.time % 100 === 0) this.printStats(); 
+        // if (Game.time % 100 === 0) this.printStats(); 
 
         if (room && room.controller && room.controller.my) {
             let spawns = room.find(FIND_MY_SPAWNS); 
