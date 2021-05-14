@@ -1,16 +1,17 @@
 'use strict' 
 
-const TaskProcess = require('./task'); 
+const Task = require('./task'); 
+const util = require('../util'); 
 
-class MineTaskProcess extends TaskProcess {
+class MineTask extends Task {
 
-    runTask() {
+    run() {
         let creep = this.creep; 
-        let source = Game.getObjectById(this.taskData.target); 
+        let source = Game.getObjectById(this.data.target); 
 
         if (!creep || !source) {
-            this.log('task not possible anymore'); 
-            return this.finishTask(); 
+            this.log('Task not possible anymore'); 
+            return this.finish(); 
         }
         
         this.mine(creep, source); 
@@ -21,8 +22,7 @@ class MineTaskProcess extends TaskProcess {
      * @param {Source} source 
      */
     mine(creep, source) {
-        let room = source.room; 
-        let pos = util.getRoomPositionReadData(this.taskData.pos); 
+        let pos = util.getRoomPositionReadData(this.data.pos); 
 
         let range = 0; 
         if (source.pos.getRangeTo(pos) === 0) {
@@ -36,4 +36,4 @@ class MineTaskProcess extends TaskProcess {
 
 }
 
-module.exports = MineTaskProcess; 
+module.exports = MineTask; 

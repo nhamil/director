@@ -1,13 +1,15 @@
 'use strict' 
 
-const DirectiveProcess = require('./directive'); 
-const spawnQueue = require('../../spawnqueue'); 
+const Directive = require('./directive'); 
 
-class MineDirectiveProcess extends DirectiveProcess {
+const spawnQueue = require('../spawnqueue'); 
+const util = require('../util'); 
+
+class MineDirective extends Directive {
 
     run() {
         let room = this.room; 
-        let creeps = util.getCreepsByHomeroomAndRole(room, 'miner'); 
+        let creeps = this.getCreepsByHomeAndRole(room, 'miner'); 
         let sources = util.findSafeSources(room); 
 
         let minedSources = {}; 
@@ -16,16 +18,15 @@ class MineDirectiveProcess extends DirectiveProcess {
         let idleMiners = []; 
 
         for (let c of creeps) {
-            let task = util.getCreepTask(c); 
-
+            let task = this.getTask(c); 
             if (task) {
                 if (task.id === 'mine') {
-                    if (task.target) {
-                        if (c.ticksToLive > 50) minedSources[task.target] = true; 
+                    if (task.data.target) {
+                        if (c.ticksToLive > 50) minedSources[task.data.target] = true; 
                     }
                     else {
                         // not valid target, reset 
-                        util.removeCreepTask(c); 
+                        this.removeTask(c); 
                         idleMiners.push(c); 
                     }
                 }
@@ -42,6 +43,7 @@ class MineDirectiveProcess extends DirectiveProcess {
             let source = sources[i]; 
 
             if (!minedSources[source.id]) {
+                if (Game.time % 100 === 0) this.log("Unmined: " + source.pos); 
                 // this.log(`Unmined source: ${source.pos}`); 
                 let index = -1; 
                 let bestDist = Infinity; 
@@ -57,7 +59,7 @@ class MineDirectiveProcess extends DirectiveProcess {
 
                 if (index !== -1) {
                     let creep = idleMiners[index]; 
-                    idleMiners = idleMiners.splice(parseInt(index)); 
+                    idleMiners.splice(parseInt(index)); 
 
                     Memory.rooms[room.name] = Memory.rooms[room.name] || {}; 
                     let containers = Memory.rooms[room.name].sourceContainers; 
@@ -69,13 +71,13 @@ class MineDirectiveProcess extends DirectiveProcess {
                         pos = util.getRoomPositionWriteData(source.pos); 
                     }
 
-                    util.giveCreepTask(creep, 'mine', {
+                    this.assignTask(creep, 'mine', {
                         target: source.id, 
                         pos: pos
                     }); 
                 }
                 else {
-                    spawnQueue.request(room, 'miner', creeps.length === 0, spawnQueue.HIGH_PRIORITY - 1); 
+                    spawnQueue.request(room, 'miner', creeps.length === 0, spawnQueue.PRIORITY_MINER); 
                 }
             }
         }
@@ -83,4 +85,4 @@ class MineDirectiveProcess extends DirectiveProcess {
 
 }
 
-module.exports = MineDirectiveProcess; 
+module.exports = MineDirective; 

@@ -1,7 +1,8 @@
 'use strict' 
 
-const DirectiveProcess = require('./directive'); 
+const Directive = require('./directive'); 
 const spawnQueue = require('../../spawnqueue'); 
+const util = require('../util'); 
 
 const structurePriority = {
     [STRUCTURE_SPAWN]: 1, 
@@ -10,14 +11,14 @@ const structurePriority = {
     [STRUCTURE_STORAGE]: 3 
 }
 
-class HaulDirectiveProcess extends DirectiveProcess {
+class HaulDirective extends Directive {
 
     run() {
         let room = this.room;
-        let creeps = util.getCreepsByHomeroomAndRole(room, ['hauler']); 
+        let creeps = this.getCreepsByHomeAndRole(room, ['hauler']); 
 
         // let idleWithoutEnergy = creeps.filter(i => !util.doesCreepHaveTask(i) && i.store.energy === 0); 
-        let idleWithEnergy = creeps.filter(i => !util.doesCreepHaveTask(i) && i.store.energy === 0); 
+        let idleWithEnergy = creeps.filter(i => !this.hasTask(i) && i.store.energy === 0); 
 
         let numTrueHaulers = 0; 
 
@@ -32,13 +33,12 @@ class HaulDirectiveProcess extends DirectiveProcess {
             targets = targets.filter(i => structurePriority[i.structureType] === pri); 
         }
         
-
         for (let creep of creeps) {
-            if (creep.ticksToLive > 100 && util.getCreepRole(creep) == 'hauler') {
+            if (creep.ticksToLive > 100 && this.getRole(creep) === 'hauler') {
                 numTrueHaulers++; 
             }
 
-            if (util.doesCreepHaveTask(creep)) continue; 
+            if (this.hasTask(creep)) continue; 
 
             // if (creep.store.energy === 0) {
             //     util.giveCreepTask(creep, 'withdraw'); 
@@ -48,7 +48,7 @@ class HaulDirectiveProcess extends DirectiveProcess {
                 let targetIndex = util.findIndexOfClosestObject(creep, targets); 
 
                 if (targetIndex !== -1) {
-                    util.giveCreepTask(creep, 'haul', {
+                    this.assignTask(creep, 'haul', {
                         target: targets[targetIndex].id
                     }); 
 
@@ -66,4 +66,4 @@ class HaulDirectiveProcess extends DirectiveProcess {
 
 }
 
-module.exports = HaulDirectiveProcess; 
+module.exports = HaulDirective; 

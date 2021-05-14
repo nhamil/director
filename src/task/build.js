@@ -1,18 +1,18 @@
 'use strict' 
 
-const TaskProcess = require('./task'); 
+const Task = require('./task'); 
 
-class BuildTaskProcess extends TaskProcess {
+class BuildTask extends Task {
 
-    runTask() {
+    run() {
         let creep = this.creep; 
-        let data = this.taskData; 
+        let data = this.data; 
         let room = Game.rooms[data.room]; 
 
         // make sure creep and build target are still valid 
         if (!creep || !data.target) {
-            this.log('task not possible anymore'); 
-            return this.finishTask(); 
+            this.log('Task not possible anymore'); 
+            return this.finish(); 
         }
 
         if (!data.action) data.action = creep.store.energy > 0 ? 'build' : 'withdraw'; 
@@ -38,21 +38,21 @@ class BuildTaskProcess extends TaskProcess {
         let target = Game.getObjectById(data.target); 
         
         if (creep.store.getCapacity(RESOURCE_ENERGY) === 0) {
-            return this.finishTask(); 
+            return this.finish(); 
         }
 
         if (!target) {
-            this.log("Construction site no longer exists"); 
-            return this.finishTask(); 
+            // this.log("Construction site no longer exists"); 
+            return this.finish(); 
         }
 
         if (this.move(target.pos, 3)) {
             if (creep.build(target) !== OK) {
-                return this.finishTask(); 
+                return this.finish(); 
             } 
         }
     }
 
 }
 
-module.exports = BuildTaskProcess; 
+module.exports = BuildTask; 

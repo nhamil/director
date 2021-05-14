@@ -1,71 +1,26 @@
 'use strict' 
 
-const Process = require('../../os/process'); 
+const Process = require('../process'); 
+const director = require('../director'); 
+const util = require('../util'); 
 
-class TaskProcess extends Process {
+class Task extends Process {
 
-    get priority() {
-        return PRIORITY_HIGH; 
+    constructor(name) {
+        super(name); 
+        
+        /** @type {Room} */
+        this.home = null; 
+        /** @type {Room} */
+        this.room = null; 
+        /** @type {Creep} */
+        this.creep = null; 
+        /** @type {Object} */
+        this.data = null; 
     }
 
-    /**
-     * @returns {Creep} 
-     */
-    get creep() {
-        return Game.creeps[this.data.creep]; 
-    }
-
-    get taskData() {
-        return util.getCreepTask(this.creep); 
-    }
-
-    create(args) {
-        if (!args.creep) {
-            this.log("Task created without a creep, killing process"); 
-            return this.kill(); 
-        }
-
-        for (let arg in args) {
-            this.data[arg] = args[arg]; 
-        }
-    }
-
-    destroy() {
-        let creep = this.creep; 
-        if (creep) {
-            util.removeCreepTask(creep);
-        }
-    }
-
-    run() {
-        if (!this.creep || !util.doesCreepHaveTask(this.creep)) {
-            return this.finishTask(); 
-        }
-        else {
-            return this.runTask(); 
-        }
-    }
-
-    runTask() {
-        return this.finishTask(); 
-    } 
-
-    finishTask() {
-        this.kill(); 
-
-        let creep = this.creep; 
-        if (creep) {
-            util.removeCreepTask(creep);
-        }
-    }
-
-    startAction(action, data = {}) {
-        let creep = this.creep; 
-        let pidName = `${creep.name}.action.${action}`; 
-        util.giveCreepAction(creep, action, data); 
-
-        this.startChildIfNotExist(`action.${action}`, pidName, data); 
-        return this.suspend(); 
+    finish() {
+        return director.removeTask(this.creep); 
     }
 
     /**
@@ -81,15 +36,12 @@ class TaskProcess extends Process {
             return true; 
         }
         else {
-            let res = creep.moveTo(pos.x, pos.y, { range: range }); 
+            let res = creep.moveTo(pos, { range: range }); 
             if (res === OK || res === ERR_TIRED || res === ERR_BUSY) {
                 if (sleep && creep.fatigue > 0) {
                     // this.sleep(creep.fatigue); 
                 }
             }
-            // else if (util.getCreepRole(creep) === 'hauler') {
-            //     this.log("Move error: " + res); 
-            // }
 
             return false; 
         }
@@ -103,7 +55,7 @@ class TaskProcess extends Process {
         }
 
         let creep = this.creep; 
-        let data = this.taskData; 
+        let data = this.data; 
 
         creep.say("energy"); 
 
@@ -212,7 +164,7 @@ class TaskProcess extends Process {
 
         return false; 
     }
-
+    
 }
 
-module.exports = TaskProcess; 
+module.exports = Task; 

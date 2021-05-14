@@ -1,18 +1,13 @@
 'use strict' 
 
-const DirectiveProcess = require('./directive'); 
-const spawnQueue = require('../../spawnqueue'); 
-const role = require('../../role'); 
+const Directive = require('./directive'); 
 
-class SpawnRoomProcess extends DirectiveProcess {
+const director = require('../director'); 
+const role = require('../role'); 
+const spawnQueue = require('../spawnqueue'); 
+const util = require('../util'); 
 
-    get important() {
-        return true; 
-    }
-
-    get priority() {
-        return PRIORITY_LOWEST; 
-    }
+class SpawnDirective extends Directive {
 
     // TODO consider miners (and consider only 1400 ticks (to spawn more))
     printStats() {
@@ -112,18 +107,19 @@ class SpawnRoomProcess extends DirectiveProcess {
     }
 
     run() {
-        let room = Game.rooms[this.data.room]; 
+        let room = this.room; 
 
         // if (Game.time % 100 === 0) this.printStats(); 
 
         if (room && room.controller && room.controller.my) {
             let spawns = room.find(FIND_MY_SPAWNS); 
 
-            let hasHaulers = util.getCreepsByHomeroomAndRole(room, 'hauler').length > 0; 
+            let hasHaulers = this.getCreepsByHomeAndRole(room, 'hauler').length > 0; 
 
             if (spawns.length > 0) {
                 let spawn = spawns[0]; 
                 let req = spawnQueue.getRequestForRoom(room); 
+                // this.log("Spawn request: " + JSON.stringify(req, null, 2)); 
                 if (req) {
                     let body = role.build(req.role, (req.needNow || !hasHaulers) ? room.energyAvailable : room.energyCapacityAvailable); 
                     if (!body) {
@@ -144,11 +140,10 @@ class SpawnRoomProcess extends DirectiveProcess {
             }
         }
         else {
-            this.log(`Room no longer needs spawning`); 
-            return this.kill(); 
+            this.log(`Room is not a colony`); 
         }
     }
 
 }
 
-module.exports = SpawnRoomProcess; 
+module.exports = SpawnDirective; 

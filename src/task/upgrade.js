@@ -1,18 +1,18 @@
 'use strict' 
 
-const TaskProcess = require('./task'); 
+const Task = require('./task'); 
 
-class UpgradeTaskProcess extends TaskProcess {
+class UpgradeTask extends Task {
 
-    runTask() {
+    run() {
         let creep = this.creep; 
-        let data = this.taskData; 
+        let data = this.data; 
         let room = Game.rooms[data.room || creep.memory.home]; 
 
         // make sure creep and room are still valid 
         if (!creep || !room || !room.controller || !room.controller.my) {
             this.log('task not possible anymore'); 
-            return this.finishTask(); 
+            return this.finish(); 
         }
 
         if (!data.action) {
@@ -39,15 +39,15 @@ class UpgradeTaskProcess extends TaskProcess {
         if (creep.store.energy > 0) {
             if (this.move(controller.pos, 3)) {
                 if (creep.upgradeController(controller) !== OK) {
-                    return this.finishTask(); 
+                    return this.finish(); 
                 }
             }
         }
         else {
-            return this.finishTask(); 
+            return this.finish(); 
         }
     }
 
 }
 
-module.exports = UpgradeTaskProcess; 
+module.exports = UpgradeTask; 

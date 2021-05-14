@@ -1,24 +1,23 @@
 'use strict' 
 
-const TaskProcess = require('./task'); 
+const Task = require('./task'); 
 
 /**
  * Data: target id 
  */
-class HaulTaskProcess extends TaskProcess {
+class HaulTask extends Task {
 
-    runTask() {
+    run() {
         if (!this.x) this.x = 0; 
         this.x++; 
 
-        // return this.finishTask(); 
         let creep = this.creep; 
-        let data = this.taskData; 
+        let data = this.data; 
 
         // make sure creep and build target are still valid 
         if (!creep || !data.target) {
             this.log('task not possible anymore'); 
-            return this.finishTask(); 
+            return this.finish(); 
         }
 
         if (!data.action) data.action = creep.store.energy > 0 ? 'transfer' : 'withdraw'; 
@@ -47,7 +46,7 @@ class HaulTaskProcess extends TaskProcess {
         // creep or room is not valid anymore 
         if (!creep || !target) {
             this.log("task can no longer be completed"); 
-            return this.finishTask(); 
+            return this.finish(); 
         }
 
         if (!this.target) this.target = target.pos; 
@@ -56,32 +55,24 @@ class HaulTaskProcess extends TaskProcess {
             this.log("WARNING Different position: " + this.target + " " + target.pos); 
         }
 
-        // if (Game.time % 50 === 0) {
-            // this.log("Trying to transfer energy to " + target.pos + " from " + creep.pos + " with a range of " + creep.pos.getRangeTo(target.pos) + " (" + creep.store.energy + " energy) " + this.x); 
-        // }
-
         if (creep.store.energy > 0) {
             // sleeps the process if creep is too far away and has any fatigue 
             if (this.move(target.pos, 1)) {
-                // if (Game.time % 50 === 0) {
-                    // this.log("Close enough to " + target.pos); 
-                // }
                 let res = creep.transfer(target, RESOURCE_ENERGY); 
                 if (res === OK || res == ERR_FULL) {
-                    // this.log("Transfer successful"); 
-                    return this.finishTask(); 
+                    return this.finish(); 
                 }
                 else {
                     this.log("Error occured while transferring resource: " + res); 
-                    return this.finishTask(); 
+                    return this.finish(); 
                 }
             }
         }
         else {
-            return this.finishTask(); 
+            return this.finish(); 
         }
     }
 
 }
 
-module.exports = HaulTaskProcess; 
+module.exports = HaulTask; 

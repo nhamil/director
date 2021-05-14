@@ -1,8 +1,9 @@
 'use strict' 
 
-const DirectiveProcess = require('./directive'); 
+const Directive = require('./directive'); 
 const spawnQueue = require('../../spawnqueue'); 
 const Queue = require('../../queue'); 
+const util = require('../util'); 
 
 const ROAD_COST = 2; 
 const OPEN_COST = 3; 
@@ -43,7 +44,7 @@ function getSiteImportance(type) {
 /** 
  * TODO planRoom
  */ 
-class StructureDirectiveProcess extends DirectiveProcess {
+class StructureDirective extends Directive {
 
     run() {
         this.handleSources(); 
@@ -105,8 +106,8 @@ class StructureDirectiveProcess extends DirectiveProcess {
     handleRepairs() {
         let room = this.room; 
 
-        let creeps = util.getCreepsByHomeroomAndRole(room, ['repairer', 'builder']); 
-        let repairers = creeps.filter(i => util.getCreepRole(i) === 'repairer'); 
+        let creeps = this.getCreepsByHomeAndRole(room, ['repairer', 'builder']); 
+        let repairers = creeps.filter(i => this.getRole(i) === 'repairer'); 
 
         let needRepairs = room.find(FIND_STRUCTURES, {
             filter: s => s.structureType !== STRUCTURE_WALL && s.structureType !== STRUCTURE_RAMPART && s.hits < s.hitsMax
@@ -136,9 +137,9 @@ class StructureDirectiveProcess extends DirectiveProcess {
                 spawnQueue.request(room, 'repairer', needRepairs[0].hits/needRepairs[0].hitsMax < 0.1, needRepairs[0].hits/needRepairs[0].hitsMax < 0.3 ? spawnQueue.HIGH_PRIORITY : spawnQueue.MEDIUM_PRIORITY); 
             }
 
-            let idle = creeps.filter(i => !util.doesCreepHaveTask(i)); 
+            let idle = creeps.filter(i => !this.hasTask(i)); 
             for (let i = 0; i < Math.min(needRepairs.length, idle.length); i++) {
-                util.giveCreepTask(idle[i], 'repair', { target: needRepairs[i].id }); 
+                this.assignTask(idle[i], 'repair', { target: needRepairs[i].id }); 
             }
         }
     }
@@ -151,7 +152,7 @@ class StructureDirectiveProcess extends DirectiveProcess {
         if (room.controller.ticksToDowngrade > 3000) roles.push('general'); 
         if (this.worstRepair > 0.8) roles.push('repairer'); 
 
-        let creeps = util.getCreepsByHomeroomAndRole(room, roles); 
+        let creeps = this.getCreepsByHomeAndRole(room, roles); 
         
         if (creeps.length < 2) {
             spawnQueue.request(room, 'builder', false, spawnQueue.HIGH_PRIORITY); 
@@ -168,8 +169,8 @@ class StructureDirectiveProcess extends DirectiveProcess {
 
         if (target) {
             for (let creep of creeps) {
-                if (!util.doesCreepHaveTask(creep)) {
-                    util.giveCreepTask(creep, 'build', {
+                if (!this.hasTask(creep)) {
+                    this.assignTask(creep, 'build', {
                         target: target.id 
                     }); 
                 }
@@ -483,4 +484,4 @@ class StructureDirectiveProcess extends DirectiveProcess {
 
 }
 
-module.exports = StructureDirectiveProcess; 
+module.exports = StructureDirective; 

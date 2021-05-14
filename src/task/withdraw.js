@@ -1,26 +1,26 @@
 'use strict' 
 
-const TaskProcess = require('./task'); 
+const Task = require('./task'); 
 
 /**
  * Useful for when creep needs to use energy on a nearby thing
  */
-class WithdrawTaskProcess extends TaskProcess {
+class WithdrawTask extends Task {
 
-    runTask() {
+    run() {
         let creep = this.creep; 
 
         // make sure creep and room are still valid 
         if (!creep) {
             this.log('task not possible anymore'); 
-            return this.finishTask(); 
+            return this.finish(); 
         }
         
         if (this.withdraw()) {
-            this.finishTask(); 
+            this.finish(); 
         }
     }
 
 }
 
-module.exports = WithdrawTaskProcess; 
+module.exports = WithdrawTask; 
